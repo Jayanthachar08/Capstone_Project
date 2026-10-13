@@ -1,0 +1,141 @@
+cell_id,batch,file_name,batch_cell_index,channel_id,policy,raw_cycle_life,benchmark_cycle_life,num_summary_cycles,is_benchmark_eligible,exclusion_reason,benchmark_partition
+b1c0,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,0,47,3.6C(80%)-3.6C,1190.0,1852.0,1851,True,None (Retained),primary_test
+b1c1,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,1,48,3.6C(80%)-3.6C,1179.0,2160.0,2159,True,None (Retained),train
+b1c2,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,2,49,3.6C(80%)-3.6C,1177.0,2237.0,2236,True,None (Retained),primary_test
+b1c3,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,3,50,4C(80%)-4C,1226.0,1434.0,1433,True,None (Retained),train
+b1c4,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,4,51,4C(80%)-4C,1227.0,1709.0,1708,True,None (Retained),primary_test
+b1c5,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,5,52,4.4C(80%)-4.4C,1074.0,1074.0,1073,True,None (Retained),train
+b1c6,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,6,53,4.8C(80%)-4.8C,636.0,636.0,635,True,None (Retained),primary_test
+b1c7,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,7,54,4.8C(80%)-4.8C,870.0,870.0,869,True,None (Retained),train
+b1c8,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,8,55,5.4C(40%)-3.6C,879.0,879.0,878,False,Batch 1: Channel test terminated before cell reached 80% nominal capacity,excluded
+b1c9,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,9,56,5.4C(40%)-3.6C,1054.0,1054.0,1053,True,None (Retained),primary_test
+b1c10,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,10,57,5.4C(50%)-3C,906.0,906.0,905,False,Batch 1: Channel test terminated before cell reached 80% nominal capacity,excluded
+b1c11,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,11,58,5.4C(50%)-3C,788.0,788.0,787,True,None (Retained),train
+b1c12,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,12,59,5.4C(50%)-3.6C,902.0,902.0,901,False,Batch 1: Channel test terminated before cell reached 80% nominal capacity,excluded
+b1c13,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,13,60,5.4C(50%)-3.6C,897.0,897.0,896,False,Batch 1: Channel test terminated before cell reached 80% nominal capacity,excluded
+b1c14,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,14,61,5.4C(60%)-3C,880.0,880.0,879,True,None (Retained),primary_test
+b1c15,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,15,62,5.4C(60%)-3C,719.0,719.0,718,True,None (Retained),train
+b1c16,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,16,63,5.4C(60%)-3.6C,862.0,862.0,861,True,None (Retained),primary_test
+b1c17,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,17,64,5.4C(60%)-3.6C,857.0,857.0,856,True,None (Retained),train
+b1c18,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,18,65,5.4C(70%)-3C,691.0,691.0,690,True,None (Retained),primary_test
+b1c19,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,19,66,5.4C(70%)-3C,788.0,788.0,787,True,None (Retained),train
+b1c20,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,20,67,5.4C(80%)-5.4C,534.0,534.0,533,True,None (Retained),primary_test
+b1c21,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,21,68,5.4C(80%)-5.4C,559.0,559.0,558,True,None (Retained),train
+b1c22,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,22,69,6C(30%)-3.6C,891.0,891.0,890,False,Batch 1: Channel test terminated before cell reached 80% nominal capacity,excluded
+b1c23,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,23,70,6C(30%)-3.6C,1014.0,1014.0,1013,True,None (Retained),primary_test
+b1c24,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,24,71,6C(40%)-3C,1017.0,1017.0,1016,True,None (Retained),train
+b1c25,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,25,72,6C(40%)-3C,854.0,854.0,853,True,None (Retained),primary_test
+b1c26,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,26,73,6C(40%)-3.6C,870.0,870.0,869,True,None (Retained),train
+b1c27,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,27,74,6C(40%)-3.6C,842.0,842.0,841,True,None (Retained),primary_test
+b1c28,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,28,75,6C(50%)-3C,860.0,860.0,859,True,None (Retained),train
+b1c29,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,29,76,6C(50%)-3C,917.0,917.0,916,True,None (Retained),primary_test
+b1c30,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,30,77,6C(50%)-3.6C,709.0,709.0,708,True,None (Retained),train
+b1c31,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,31,78,6C(50%)-3.6C,876.0,876.0,875,True,None (Retained),primary_test
+b1c32,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,32,79,6C(60%)-3C,731.0,731.0,730,True,None (Retained),train
+b1c33,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,33,80,6C(60%)-3C,757.0,757.0,756,True,None (Retained),primary_test
+b1c34,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,34,81,7C(30%)-3.6C,742.0,742.0,741,True,None (Retained),train
+b1c35,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,35,82,7C(30%)-3.6C,703.0,703.0,702,True,None (Retained),primary_test
+b1c36,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,36,83,7C(40%)-3C,704.0,704.0,703,True,None (Retained),train
+b1c37,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,37,84,7C(40%)-3C,648.0,648.0,647,True,None (Retained),primary_test
+b1c38,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,38,85,7C(40%)-3.6C,617.0,617.0,616,True,None (Retained),train
+b1c39,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,39,86,7C(40%)-3.6C,625.0,625.0,624,True,None (Retained),primary_test
+b1c40,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,40,87,8C(15%)-3.6C,966.0,966.0,965,True,None (Retained),train
+b1c41,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,41,88,8C(15%)-3.6C,1051.0,1051.0,1050,True,None (Retained),primary_test
+b1c42,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,42,89,8C(25%)-3.6C,702.0,702.0,701,True,None (Retained),train
+b1c43,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,43,90,8C(25%)-3.6C,651.0,651.0,650,True,None (Retained),primary_test
+b1c44,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,44,91,8C(35%)-3.6C,616.0,616.0,615,True,None (Retained),train
+b1c45,batch1,2017-05-12_batchdata_updated_struct_errorcorrect.mat,45,92,8C(35%)-3.6C,599.0,599.0,598,True,None (Retained),primary_test
+b2c0,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,0,49,1C(4%)-6C,300.0,300.0,326,True,None (Retained),train
+b2c1,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,1,50,2C(10%)-6C,148.0,148.0,170,True,None (Retained),primary_test
+b2c2,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,2,51,2C(2%)-5C,438.0,438.0,464,True,None (Retained),train
+b2c3,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,3,52,2C(7%)-5.5C,335.0,335.0,361,True,None (Retained),primary_test
+b2c4,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,4,53,3.6C(22%)-5.5C,444.0,444.0,471,True,None (Retained),train
+b2c5,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,5,54,3.6C(2%)-4.85C,480.0,480.0,507,True,None (Retained),primary_test
+b2c6,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,6,55,3.6C(30%)-6C,511.0,511.0,545,True,None (Retained),train
+b2c7,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,7,56,80%)-3.6C,663.0,663.0,662,False,Batch 2: Continuation segment of b1c0 (merged into b1c0 per benchmark protocol),excluded
+b2c8,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,8,57,80%)-3.6C,982.0,982.0,981,False,Batch 2: Continuation segment of b1c1 (merged into b1c1 per benchmark protocol),excluded
+b2c9,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,9,58,80%)-3.6C,1061.0,1061.0,1060,False,Batch 2: Continuation segment of b1c2 (merged into b1c2 per benchmark protocol),excluded
+b2c10,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,10,59,3.6C(9%)-5C,561.0,561.0,596,True,None (Retained),primary_test
+b2c11,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,11,60,4C(13%)-5C,477.0,477.0,505,True,None (Retained),train
+b2c12,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,12,61,4C(31%)-5,458.0,458.0,491,True,None (Retained),primary_test
+b2c13,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,13,62,4C(40%)-6C,483.0,483.0,520,True,None (Retained),train
+b2c14,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,14,63,4C(4%)-4.85C,485.0,485.0,509,True,None (Retained),primary_test
+b2c15,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,15,64,80%)-4C,209.0,209.0,208,False,Batch 2: Continuation segment of b1c3 (merged into b1c3 per benchmark protocol),excluded
+b2c16,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,16,65,80%)-4C,483.0,483.0,482,False,Batch 2: Continuation segment of b1c4 (merged into b1c4 per benchmark protocol),excluded
+b2c17,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,17,66,4.4C(24%)-5C,494.0,494.0,525,True,None (Retained),train
+b2c18,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,18,67,4.4C(47%)-5.5C,487.0,487.0,523,True,None (Retained),primary_test
+b2c19,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,19,68,4.4C(55%)-6C,461.0,461.0,489,True,None (Retained),train
+b2c20,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,20,69,4.4C(8%)-4.85C,502.0,502.0,531,True,None (Retained),primary_test
+b2c21,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,21,70,4.65C(19%)-4.85C,489.0,489.0,520,True,None (Retained),train
+b2c22,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,22,71,4.65C(44%)-5C,513.0,513.0,540,True,None (Retained),primary_test
+b2c23,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,23,72,4.65C(69%)-6C,527.0,527.0,562,True,None (Retained),train
+b2c24,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,24,73,4.8C(80%)-4.8C,495.0,495.0,524,True,None (Retained),primary_test
+b2c25,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,25,74,4.8C(80%)-4.8C,461.0,461.0,487,True,None (Retained),train
+b2c26,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,26,75,4.8C(80%)-4.8C,471.0,471.0,498,True,None (Retained),primary_test
+b2c27,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,27,76,4.9C(27%)-4.75C,468.0,468.0,495,True,None (Retained),train
+b2c28,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,28,77,4.9C(61%)-4.5C,509.0,509.0,541,True,None (Retained),primary_test
+b2c29,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,29,78,4.9C(69%)-4.25C,498.0,498.0,522,True,None (Retained),train
+b2c30,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,30,79,5.2C(10%)-4.75C,481.0,481.0,507,True,None (Retained),primary_test
+b2c31,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,31,80,5.2C(37%)-4.5C,492.0,492.0,519,True,None (Retained),train
+b2c32,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,32,81,5.2C(50%)-4.25C,519.0,519.0,544,True,None (Retained),primary_test
+b2c33,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,33,82,5.2C(58%)-4C,520.0,520.0,546,True,None (Retained),train
+b2c34,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,34,83,5.2C(66%)-3.5C,499.0,499.0,526,True,None (Retained),primary_test
+b2c35,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,35,84,5.2C(71%)-3C,463.0,463.0,486,True,None (Retained),train
+b2c36,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,36,85,5.6C(25%)-4.5C,535.0,535.0,560,True,None (Retained),primary_test
+b2c37,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,37,86,5.6C(38%)-4.25C,478.0,478.0,502,True,None (Retained),train
+b2c38,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,38,87,5.6C(47%)-4C,465.0,465.0,487,True,None (Retained),primary_test
+b2c39,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,39,88,5.6C(58%)-3.5C,459.0,459.0,480,True,None (Retained),train
+b2c40,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,40,89,5.6C(5%)-4.75C,499.0,499.0,530,True,None (Retained),primary_test
+b2c41,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,41,90,5.6C(65%)-3C,429.0,429.0,452,True,None (Retained),train
+b2c42,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,42,91,6C(20%)-4.5C,466.0,466.0,492,True,None (Retained),primary_test
+b2c43,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,43,92,6C(31%)-4.25C,462.0,462.0,487,True,None (Retained),train
+b2c44,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,44,93,6C(40%)-4C,457.0,457.0,479,True,None (Retained),primary_test
+b2c45,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,45,94,6C(4%)-4.75C,487.0,487.0,514,True,None (Retained),train
+b2c46,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,46,95,6C(52%)-3.5C,429.0,429.0,449,True,None (Retained),primary_test
+b2c47,batch2,2017-06-30_batchdata_updated_struct_errorcorrect.mat,47,96,6C(60%)-3C,713.0,713.0,745,True,None (Retained),primary_test
+b3c0,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,0,47,5C(67%)-4C-newstructure,1009.0,1009.0,1008,True,None (Retained),secondary_test
+b3c1,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,1,48,5.3C(54%)-4C-newstructure,1063.0,1063.0,1062,True,None (Retained),secondary_test
+b3c2,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,2,49,5.6C(19%)-4.6C-newstructure,1267.0,1267.0,1266,False,Batch 3: Irregular noisy temperature/voltage profile,excluded
+b3c3,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,3,50,5.6C(36%)-4.3C-newstructure,1115.0,1115.0,1114,True,None (Retained),secondary_test
+b3c4,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,4,51,5.6C(19%)-4.6C-newstructure,1048.0,1048.0,1047,True,None (Retained),secondary_test
+b3c5,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,5,52,5.6C(36%)-4.3C-newstructure,828.0,828.0,827,True,None (Retained),secondary_test
+b3c6,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,6,53,3.7C(31%)-5.9C-newstructure,667.0,667.0,666,True,None (Retained),secondary_test
+b3c7,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,7,54,4.8C(80%)-4.8C-newstructure,1836.0,1836.0,1835,True,None (Retained),secondary_test
+b3c8,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,8,55,5C(67%)-4C-newstructure,828.0,828.0,827,True,None (Retained),secondary_test
+b3c9,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,9,56,5.3C(54%)-4C-newstructure,1039.0,1039.0,1038,True,None (Retained),secondary_test
+b3c10,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,10,57,4.8C(80%)-4.8C-newstructure,1078.0,1078.0,1077,True,None (Retained),secondary_test
+b3c11,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,11,58,5.6C(19%)-4.6C-newstructure,817.0,817.0,816,True,None (Retained),secondary_test
+b3c12,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,12,59,5.6C(36%)-4.3C-newstructure,932.0,932.0,931,True,None (Retained),secondary_test
+b3c13,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,13,60,5.6C(19%)-4.6C-newstructure,816.0,816.0,815,True,None (Retained),secondary_test
+b3c14,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,14,61,5.6C(36%)-4.3C-newstructure,858.0,858.0,857,True,None (Retained),secondary_test
+b3c15,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,15,62,5.9C(15%)-4.6C-newstructure,876.0,876.0,875,True,None (Retained),secondary_test
+b3c16,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,16,63,4.8C(80%)-4.8C-newstructure,1638.0,1638.0,1637,True,None (Retained),secondary_test
+b3c17,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,17,64,5.3C(54%)-4C-newstructure,1315.0,1315.0,1314,True,None (Retained),secondary_test
+b3c18,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,18,65,5.6C(19%)-4.6C-newstructure,1146.0,1146.0,1145,True,None (Retained),secondary_test
+b3c19,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,19,66,5.6C(36%)-4.3C-newstructure,1155.0,1155.0,1154,True,None (Retained),secondary_test
+b3c20,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,20,67,5C(67%)-4C-newstructure,813.0,813.0,812,True,None (Retained),secondary_test
+b3c21,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,21,68,3.7C(31%)-5.9C-newstructure,772.0,772.0,771,True,None (Retained),secondary_test
+b3c22,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,22,69,5.9C(60%)-3.1C-newstructure,1002.0,1002.0,1001,True,None (Retained),secondary_test
+b3c23,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,23,70,4.8C(80%)-4.8C-newstructure,,,2189,False,Batch 3: Undefined cycle life (cell reached >2189 cycles without 80% cutoff),excluded
+b3c24,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,24,71,5C(67%)-4C-newstructure,825.0,825.0,824,True,None (Retained),secondary_test
+b3c25,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,25,72,5.3C(54%)-4C-newstructure,989.0,989.0,988,True,None (Retained),secondary_test
+b3c26,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,26,73,5.6C(19%)-4.6C-newstructure,1028.0,1028.0,1027,True,None (Retained),secondary_test
+b3c27,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,27,74,5.6C(36%)-4.3C-newstructure,850.0,850.0,849,True,None (Retained),secondary_test
+b3c28,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,28,75,3.7C(31%)-5.9C-newstructure,541.0,541.0,540,True,None (Retained),secondary_test
+b3c29,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,29,76,5.9C(15%)-4.6C-newstructure,858.0,858.0,857,True,None (Retained),secondary_test
+b3c30,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,30,77,5.3C(54%)-4C-newstructure,935.0,935.0,934,True,None (Retained),secondary_test
+b3c31,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,31,78,5.9C(60%)-3.1C-newstructure,731.0,731.0,730,True,None (Retained),secondary_test
+b3c32,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,32,79,4.8C(80%)-4.8C-newstructure,,,2237,False,Batch 3: Undefined cycle life (cell reached >2237 cycles without 80% cutoff),excluded
+b3c33,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,33,80,5C(67%)-4C-newstructure,1284.0,1284.0,1283,True,None (Retained),secondary_test
+b3c34,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,34,81,5.3C(54%)-4C-newstructure,1158.0,1158.0,1157,True,None (Retained),secondary_test
+b3c35,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,35,82,5.6C(19%)-4.6C-newstructure,1093.0,1093.0,1092,True,None (Retained),secondary_test
+b3c36,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,36,83,5.6C(36%)-4.3C-newstructure,923.0,923.0,922,True,None (Retained),secondary_test
+b3c37,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,37,84,4.8C(80%)-4.8C-newstructure,1390.0,1390.0,1389,False,Batch 3: Temperature sensor detached / high thermal anomaly,excluded
+b3c38,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,38,85,5C(67%)-4C-newstructure,1935.0,1935.0,1934,True,None (Retained),secondary_test
+b3c39,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,39,86,5.3C(54%)-4C-newstructure,1156.0,1156.0,1155,True,None (Retained),secondary_test
+b3c40,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,40,87,5.6C(19%)-4.6C-newstructure,796.0,796.0,795,True,None (Retained),secondary_test
+b3c41,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,41,88,5.6C(36%)-4.3C-newstructure,786.0,786.0,785,True,None (Retained),secondary_test
+b3c42,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,42,89,4.8C(80%)-4.8C-newstructure,1642.0,1642.0,1641,False,Batch 3: Noisy sensor channel in test batch,excluded
+b3c43,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,43,90,5C(67%)-4C-newstructure,1046.0,1046.0,1045,False,Batch 3: Loose contact / noisy resistance channel in test batch,excluded
+b3c44,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,44,91,5.3C(54%)-4C-newstructure,940.0,940.0,939,True,None (Retained),secondary_test
+b3c45,batch3,2018-04-12_batchdata_updated_struct_errorcorrect.mat,45,92,4.8C(80%)-4.8C-newstructure,1801.0,1801.0,1800,True,None (Retained),secondary_test

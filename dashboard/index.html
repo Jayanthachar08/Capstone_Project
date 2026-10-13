@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battery Degradation Screening | Capstone Research Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Chart.js local bundle with CDN fallback -->
+  <script src="assets/chart.umd.min.js"></script>
+  <script>
+    if (typeof Chart === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <!-- Top Navigation & Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="16" height="10" rx="2" ry="2"></rect>
+            <line x1="22" y1="11" x2="22" y2="13"></line>
+            <line x1="6" y1="11" x2="6" y2="13"></line>
+            <line x1="10" y1="11" x2="10" y2="13"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="title-row">
+            <h1>Battery Degradation Screening</h1>
+            <span class="badge badge-accent">Capstone Research Prototype</span>
+            <span class="badge badge-outline">B.Tech CSE Capstone</span>
+          </div>
+          <p class="subtitle">Confidence-Aware Peer-Relative Analysis for Early End-of-Life Risk Prediction in Lithium-Ion Batteries</p>
+          <p class="header-desc">Analyze battery aging, compare degradation patterns, and develop early end-of-life risk screening on the MATR / Severson et al. benchmark dataset.</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-pill">
+          <span class="stat-num" id="stat-total-cells">140</span>
+          <span class="stat-lbl">Total Cells</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-num text-teal" id="stat-eligible-cells">124</span>
+          <span class="stat-lbl">Eligible Benchmark</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-num text-amber" id="stat-excluded-cells">16</span>
+          <span class="stat-lbl">Excluded Channels</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-num text-cyan" id="stat-models-count">4</span>
+          <span class="stat-lbl">Models (M1–M4)</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-num text-emerald" id="stat-predictions-count">372</span>
+          <span class="stat-lbl">Predictions</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    
+    <!-- Controls Bar -->
+    <section class="controls-card">
+      <div class="controls-grid">
+        <div class="control-group">
+          <label for="battery-select">Select Target Battery:</label>
+          <div class="select-wrapper">
+            <select id="battery-select" class="form-control">
+              <option value="">Loading battery database...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Early-Life Observation Cutoff:</label>
+          <div class="cutoff-pills" role="radiogroup" id="cutoff-selector">
+            <button class="pill-btn" data-cutoff="40">40 Cycles</button>
+            <button class="pill-btn" data-cutoff="70">70 Cycles</button>
+            <button class="pill-btn active" data-cutoff="100">100 Cycles</button>
+            <button class="pill-btn" data-cutoff="all">Full Lifecycle</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Selected ML Model:</label>
+          <div class="model-pills" role="radiogroup" id="model-selector">
+            <button class="pill-btn" data-model="M1" title="M1: Condition Baseline (Initial & Snapshot, 18 features)">M1</button>
+            <button class="pill-btn" data-model="M2" title="M2: Individual Trajectory (+Slopes & Curvature, 34 features)">M2</button>
+            <button class="pill-btn" data-model="M3" title="M3: Peer-Relative (+Deviations from Matched Peers, 42 features)">M3</button>
+            <button class="pill-btn active" data-model="M4" title="M4: Confidence-Aware (+PMRI Reliability, 46 features)">M4 (Proposed)</button>
+          </div>
+        </div>
+
+        <div class="control-group metadata-preview" id="cell-meta-strip">
+          <div class="meta-item">
+            <span class="meta-label">Batch:</span>
+            <span class="meta-val" id="meta-batch">-</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Split Partition:</span>
+            <span class="meta-val" id="meta-partition">-</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Charging Protocol:</span>
+            <span class="meta-val" id="meta-policy">-</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Cohort Elevated Risk:</span>
+            <span class="meta-val text-amber" id="meta-risk-tally">-</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Metrics Cards -->
+    <section class="summary-grid" id="summary-cards">
+      <div class="metric-card">
+        <div class="card-icon icon-cyan">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        </div>
+        <div class="card-content">
+          <div class="metric-label">Selected Battery ID</div>
+          <div class="metric-value" id="card-cell-id">--</div>
+          <div class="metric-sub" id="card-cell-status">Loading...</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="card-icon icon-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        </div>
+        <div class="card-content">
+          <div class="metric-label">Observed Cycles</div>
+          <div class="metric-value"><span id="card-observed-cycles">--</span> <span class="unit">cyc</span></div>
+          <div class="metric-sub" id="card-total-cycles">of -- total recorded</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="card-icon icon-teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </div>
+        <div class="card-content">
+          <div class="metric-label">Discharge Capacity</div>
+          <div class="metric-value"><span id="card-latest-q">--</span> <span class="unit">Ah</span></div>
+          <div class="metric-sub" id="card-initial-q">Baseline (Cyc 2): -- Ah</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="card-icon icon-emerald">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        </div>
+        <div class="card-content">
+          <div class="metric-label">Capacity Retention</div>
+          <div class="metric-value" id="card-retention">--%</div>
+          <div class="metric-sub" id="card-fade-delta">Fade ΔQ: -- Ah</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="card-icon icon-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        </div>
+        <div class="card-content">
+          <div class="metric-label">Internal Resistance (IR)</div>
+          <div class="metric-value"><span id="card-latest-ir">--</span> <span class="unit">Ω</span></div>
+          <div class="metric-sub" id="card-ir-growth">Change: --</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="card-icon icon-rose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>
+        </div>
+        <div class="card-content">
+          <div class="metric-label">Peak Temperature & Time</div>
+          <div class="metric-value"><span id="card-tmax">--</span> <span class="unit">°C</span></div>
+          <div class="metric-sub" id="card-chargetime">Charge time: -- min</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Integrity Note -->
+    <div class="callout callout-info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-text">
+        <strong>Data Calibration Protocol:</strong> In the MATR/Severson dataset, Cycle 1 was an unmonitored diagnostic/formation step with recorded discharge capacity of 0.0 Ah. All physical baseline measurements and trajectory fade rates are strictly computed starting from <strong>Cycle 2 onward</strong> to preserve physical validity.
+      </div>
+    </div>
+
+    <!-- Chart Section: Battery Trajectory & Additional Measurements -->
+    <section class="chart-section">
+      <div class="section-card">
+        <div class="card-header-flex">
+          <div>
+            <h2 class="card-title">Battery Degradation Trajectory</h2>
+            <p class="card-subtitle">Real cycle-by-cycle measurements up to the selected observation window.</p>
+          </div>
+          <div class="metric-tabs" id="metric-tab-bar">
+            <button class="tab-btn active" data-metric="QDischarge">Discharge Capacity (Ah)</button>
+            <button class="tab-btn" data-metric="IR">Internal Resistance (Ω)</button>
+            <button class="tab-btn" data-metric="Tmax">Max Temperature (°C)</button>
+            <button class="tab-btn" data-metric="Tavg">Avg Temperature (°C)</button>
+            <button class="tab-btn" data-metric="chargetime">Charge Time (min)</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="trajectory-chart"></canvas>
+        </div>
+        <div class="chart-footer-legend">
+          <span class="legend-item"><span class="legend-dot dot-primary"></span> Observed Cell Trajectory</span>
+          <span class="legend-item" id="legend-nominal"><span class="legend-line line-green"></span> Nominal Capacity (1.10 Ah)</span>
+          <span class="legend-item" id="legend-eol"><span class="legend-line line-red"></span> 80% EOL Threshold (0.88 Ah)</span>
+          <span class="legend-item"><span class="legend-line line-dashed"></span> Observation Window Cutoff</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section F: Exploratory Battery Comparison -->
+    <section class="chart-section">
+      <div class="section-card">
+        <div class="card-header-flex">
+          <div>
+            <div class="title-with-badge">
+              <h2 class="card-title">Exploratory Battery Comparison</h2>
+              <span class="badge badge-warning">Exploratory Multi-Cell Overlay</span>
+            </div>
+            <p class="card-subtitle">Compare the selected battery with other cells across the dataset to observe comparative trajectory spread.</p>
+          </div>
+          <div class="compare-controls">
+            <div class="quick-cohort-buttons">
+              <button class="btn btn-sm" id="btn-compare-same-policy">Compare Same Policy</button>
+              <button class="btn btn-sm" id="btn-compare-batch-samples">Compare Across Batches</button>
+              <button class="btn btn-sm btn-ghost" id="btn-clear-compare">Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="compare-picker-bar">
+          <label>Add/Remove Comparison Cells:</label>
+          <div id="compare-pills-list" class="compare-chips">
+            <!-- Dynamic comparison chips -->
+          </div>
+          <div class="add-cell-input-wrapper">
+            <select id="compare-cell-select" class="form-control form-control-sm">
+              <option value="">+ Add cell to comparison...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="comparison-chart"></canvas>
+        </div>
+
+        <div class="callout callout-warning">
+          <div class="callout-icon">⚠️</div>
+          <div class="callout-text">
+            <strong>Scientific Integrity Notice:</strong> This section displays an <em>exploratory comparison</em> of user-selected batteries. It does <strong>not</strong> claim these cells are scientifically matched peers. Validated peer-matching algorithms (evaluating operational condition similarity, cohort size <em>k</em>, and trajectory agreement) are scheduled for development in <strong>Phase 5</strong>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section G: Feature Analysis -->
+    <section class="features-section">
+      <div class="section-card">
+        <div class="card-header-flex">
+          <div>
+            <h2 class="card-title">Engineered Feature Analysis</h2>
+            <p class="card-subtitle">Review the 34 validated features computed for the selected battery at the active cutoff window.</p>
+          </div>
+          <div class="feature-group-tabs" id="feature-group-tabs">
+            <button class="tab-btn active" data-group="Initial Condition">Initial Condition (11)</button>
+            <button class="tab-btn" data-group="Instantaneous Snapshot">Snapshot at Cutoff (7)</button>
+            <button class="tab-btn" data-group="Emerging Trajectory">Emerging Trajectory (11)</button>
+            <button class="tab-btn" data-group="Differential Curves">Differential Curves (5)</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="features-table" id="features-table">
+            <thead>
+              <tr>
+                <th>Feature Name</th>
+                <th>Database Column</th>
+                <th>Computed Value</th>
+                <th>Unit</th>
+                <th>Physical Description & Formulation</th>
+              </tr>
+            </thead>
+            <tbody id="features-table-body">
+              <tr><td colspan="5" class="text-center">Select a battery to inspect features.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section H: Machine Learning EOL Risk Prediction & Comparative Assessment -->
+    <section class="section-card" id="section-risk-prediction">
+      <div class="card-header-flex">
+        <div>
+          <div class="title-with-badge">
+            <h2 class="card-title">Machine Learning EOL Risk Prediction</h2>
+            <span class="badge badge-accent">Phase 7 Live Model Integration</span>
+          </div>
+          <p class="card-subtitle">Validated binary risk screening: Estimated probability that the battery reaches End-of-Life (≤ 80% capacity) within 500 cycles of observation cutoff.</p>
+        </div>
+        <div id="risk-validation-badge-wrap">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <div class="risk-summary-card">
+        <div class="risk-display-flex">
+          <div class="risk-score-box">
+            <div class="risk-score-num text-cyan" id="risk-prob-num">--%</div>
+            <div class="risk-score-lbl">Estimated Failure Risk (<span id="risk-model-label">M4</span> at Cutoff <span id="risk-cutoff-label">100</span>)</div>
+          </div>
+          <div id="risk-category-badge-container">
+            <span class="risk-badge risk-badge-nominal" id="risk-status-badge">Nominal Risk</span>
+          </div>
+        </div>
+
+        <div class="risk-details-list">
+          <div class="risk-detail-item">
+            <span class="risk-detail-lbl">Active Model:</span>
+            <span class="risk-detail-val" id="risk-detail-model">M4 (Confidence-Aware)</span>
+          </div>
+          <div class="risk-detail-item">
+            <span class="risk-detail-lbl">Target Formulation:</span>
+            <span class="risk-detail-val">target_fail_within_500</span>
+          </div>
+          <div class="risk-detail-item">
+            <span class="risk-detail-lbl">Decision Threshold:</span>
+            <span class="risk-detail-val" id="risk-detail-thresh">0.5790 (5-fold CV)</span>
+          </div>
+          <div class="risk-detail-item">
+            <span class="risk-detail-lbl">Feature Count:</span>
+            <span class="risk-detail-val" id="risk-detail-features">46 Features</span>
+          </div>
+          <div class="risk-detail-item">
+            <span class="risk-detail-lbl">Prediction Origin:</span>
+            <span class="risk-detail-val text-teal">Saved Validated Prediction</span>
+          </div>
+          <div class="risk-detail-item">
+            <span class="risk-detail-lbl">Validation Cohort:</span>
+            <span class="risk-detail-val" id="risk-detail-partition">Primary Test (N=43)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model Comparison Table -->
+      <div style="margin-top: 1.5rem;">
+        <h4 class="subhead">Four-Model Comparative Risk Assessment (M1 — M4)</h4>
+        <div class="table-responsive">
+          <table class="features-table" id="models-comparison-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Configuration Name</th>
+                <th>Feature Count</th>
+                <th>Feature Groups Included</th>
+                <th>Estimated Probability</th>
+                <th>Threshold</th>
+                <th>Risk Classification</th>
+              </tr>
+            </thead>
+            <tbody id="models-comparison-tbody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sequestered Ground Truth Reference Box -->
+      <div class="audit-targets-card" style="margin-top: 1.25rem;">
+        <h4 class="subhead">Sequestered Benchmark Target Reference (Audit Only — Never Exposed to Features)</h4>
+        <div class="target-grid" id="ground-truth-targets">
+          <div class="target-item">
+            <span class="t-label">True EOL Cycle (80% Capacity):</span>
+            <span class="t-val" id="val-target-eol">--</span>
+          </div>
+          <div class="target-item">
+            <span class="t-label">Remaining Useful Life (RUL):</span>
+            <span class="t-val" id="val-target-rul">--</span>
+          </div>
+          <div class="target-item">
+            <span class="t-label">Failure Within 500 Cycles?:</span>
+            <span class="t-val" id="val-target-500">--</span>
+          </div>
+          <div class="target-item">
+            <span class="t-label">Early Failure (Cycle ≤ 700)?:</span>
+            <span class="t-val" id="val-target-700">--</span>
+          </div>
+        </div>
+        <p class="target-note">Target labels represent true empirical outcomes sequestered during feature extraction and early observation.</p>
+      </div>
+    </section>
+
+    <!-- Section: Peer-Relative Degradation Analysis & Aligned Trajectory Overlay -->
+    <section class="section-card" id="section-peer-relative">
+      <div class="card-header-flex">
+        <div>
+          <div class="title-with-badge">
+            <h2 class="card-title">Peer-Relative Degradation Analysis</h2>
+            <span class="badge badge-teal">Scientifically Matched Reference Peers (k=5)</span>
+          </div>
+          <p class="card-subtitle">Compare target cell degradation against matched training reference peers having similar initial state (Q2, IR2) and charging protocol.</p>
+        </div>
+        <div>
+          <span class="badge badge-outline" id="peer-status-pill">Status: MATCH_SUCCESS</span>
+        </div>
+      </div>
+
+      <div class="peer-chips-wrap" id="peer-chips-container">
+        <!-- Matched peer chips populated dynamically -->
+      </div>
+
+      <div class="chart-container" style="margin-top: 1.25rem;">
+        <canvas id="peer-trajectory-chart"></canvas>
+      </div>
+
+      <div style="margin-top: 1.5rem;">
+        <h4 class="subhead">Relative Trajectory Deviation Metrics</h4>
+        <div class="table-responsive">
+          <table class="features-table">
+            <thead>
+              <tr>
+                <th>Relative Metric</th>
+                <th>Database Column</th>
+                <th>Value</th>
+                <th>Physical Meaning</th>
+              </tr>
+            </thead>
+            <tbody id="peer-metrics-tbody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section I: Peer-Match Reliability Index (PMRI) -->
+    <section class="section-card" id="section-pmri">
+      <div class="card-header-flex">
+        <div>
+          <div class="title-with-badge">
+            <h2 class="card-title">Peer-Match Reliability Index (PMRI)</h2>
+            <span class="badge badge-purple">Confidence & Uncertainty Assessment</span>
+          </div>
+          <p class="card-subtitle">Quantifies how densely and closely the target battery matches the reference training cohort.</p>
+        </div>
+        <div id="pmri-warning-badge-wrap">
+          <span class="badge badge-success" id="pmri-warning-badge">No Reliability Warnings</span>
+        </div>
+      </div>
+
+      <div class="pmri-gauge-card">
+        <div class="pmri-main-header">
+          <div>
+            <div class="pmri-value-large" id="pmri-composite-val">0.8576</div>
+            <div class="risk-score-lbl">Composite PMRI Score (Scale: 0.00 — 1.00)</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.82rem; color: var(--text-muted);">Mean Peer Distance: <strong class="text-main" id="pmri-mean-dist">0.6137</strong></div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.25rem;">Cohort Trajectory Dispersion: <strong class="text-main" id="pmri-dispersion">0.0028 Ah</strong></div>
+          </div>
+        </div>
+
+        <div class="pmri-component-bars">
+          <div class="pmri-bar-row">
+            <span class="pmri-bar-label">S_sim (Peer Similarity):</span>
+            <div class="pmri-bar-track"><div class="pmri-bar-fill" id="bar-s-sim" style="width: 85%;"></div></div>
+            <span class="pmri-bar-val" id="val-s-sim">0.8500</span>
+          </div>
+          <div class="pmri-bar-row">
+            <span class="pmri-bar-label">S_cov (Pool Coverage):</span>
+            <div class="pmri-bar-track"><div class="pmri-bar-fill" id="bar-s-cov" style="width: 90%;"></div></div>
+            <span class="pmri-bar-val" id="val-s-cov">0.9000</span>
+          </div>
+          <div class="pmri-bar-row">
+            <span class="pmri-bar-label">S_agree (Trajectory Agreement):</span>
+            <div class="pmri-bar-track"><div class="pmri-bar-fill" id="bar-s-agree" style="width: 82%;"></div></div>
+            <span class="pmri-bar-val" id="val-s-agree">0.8200</span>
+          </div>
+          <div class="pmri-bar-row">
+            <span class="pmri-bar-label">S_consist (Consistency):</span>
+            <div class="pmri-bar-track"><div class="pmri-bar-fill" id="bar-s-consist" style="width: 88%;"></div></div>
+            <span class="pmri-bar-val" id="val-s-consist">0.8800</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout callout-info" style="margin-top: 1rem;">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text">
+          <strong>Scientific Interpretation of PMRI:</strong>
+          PMRI measures <em>reference match quality and cohort density</em>. It is <strong>not</strong> a failure probability, nor does a high PMRI mean the cell is healthy. A lower PMRI indicates caution: the training reference pool lacks close operational analogs for this cell, alerting operators to treat predictions with uncertainty or exercise abstention.
+        </div>
+      </div>
+    </section>
+
+    <!-- Section K: Research Model-Comparison Results & Hypothesis Findings -->
+    <section class="section-card" id="section-research-results">
+      <div class="card-header-flex">
+        <div>
+          <div class="title-with-badge">
+            <h2 class="card-title">Research Model-Comparison Results & Hypothesis Findings</h2>
+            <span class="badge badge-emerald">Phase 5 & 6 Experimental Outcomes</span>
+          </div>
+          <p class="card-subtitle">Empirical evidence from paired bootstrap uncertainty analysis (B=1000) and robustness experiments.</p>
+        </div>
+      </div>
+
+      <div class="research-tabs-bar" id="research-tabs-bar">
+        <button class="research-tab-btn active" data-tab="tab-perf">Model Performance Benchmark</button>
+        <button class="research-tab-btn" data-tab="tab-hyp">Hypothesis Verdicts (H1–H4)</button>
+        <button class="research-tab-btn" data-tab="tab-diff">Paired Bootstrap Differences</button>
+        <button class="research-tab-btn" data-tab="tab-figs">Publication Visualizations</button>
+      </div>
+
+      <!-- Tab 1: Performance Benchmark -->
+      <div class="research-panel" id="tab-perf">
+        <h4 class="subhead">Performance Metrics on Benchmark Test Cohorts</h4>
+        <div class="table-responsive">
+          <table class="research-table" id="research-metrics-table">
+            <thead>
+              <tr>
+                <th>Cutoff</th>
+                <th>Model</th>
+                <th>Partition</th>
+                <th>Samples (Pos/Neg)</th>
+                <th>AUROC</th>
+                <th>AUPRC</th>
+                <th>Brier Score</th>
+                <th>ECE</th>
+                <th>Accuracy</th>
+                <th>Sensitivity</th>
+                <th>Specificity</th>
+                <th>F1-Score</th>
+              </tr>
+            </thead>
+            <tbody id="research-metrics-tbody">
+              <!-- Populated dynamically from /api/models/metrics -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Hypothesis Verdicts -->
+      <div class="research-panel" id="tab-hyp" style="display: none;">
+        <div class="hypothesis-grid" id="hypothesis-cards-grid">
+          <!-- Populated dynamically from /api/research/summary -->
+        </div>
+      </div>
+
+      <!-- Tab 3: Paired Model Differences -->
+      <div class="research-panel" id="tab-diff" style="display: none;">
+        <h4 class="subhead">Paired Battery-Level Bootstrap Differences (B = 1000 resamples)</h4>
+        <div class="table-responsive">
+          <table class="research-table" id="research-diff-table">
+            <thead>
+              <tr>
+                <th>Cutoff</th>
+                <th>Partition</th>
+                <th>Comparison Pair</th>
+                <th>ΔAUROC [95% Bootstrap CI]</th>
+                <th>ΔAUPRC [95% Bootstrap CI]</th>
+                <th>ΔBrier Score [95% Bootstrap CI]</th>
+                <th>Statistical Significance</th>
+              </tr>
+            </thead>
+            <tbody id="research-diff-tbody">
+              <!-- Populated dynamically from /api/research/differences -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 4: Publication Visualizations -->
+      <div class="research-panel" id="tab-figs" style="display: none;">
+        <div class="figure-gallery-grid">
+          <div class="figure-card">
+            <img src="/results/figures/cutoff_comparison.png" alt="Cutoff Comparison Plot" loading="lazy">
+            <div class="figure-card-body">
+              <h4>Figure 1: Observation Cutoff Sensitivity (Cutoffs 40, 70, 100)</h4>
+              <p>Discrimination (AUROC, AUPRC) and probability calibration (Brier score) across cutoffs for M1, M2, M3, and M4.</p>
+            </div>
+          </div>
+          <div class="figure-card">
+            <img src="/results/figures/model_differences.png" alt="Model Differences Plot" loading="lazy">
+            <div class="figure-card-body">
+              <h4>Figure 2: Paired Model Differences with 95% Bootstrap CIs</h4>
+              <p>Forest plot of pairwise metric deltas on identical battery resamples across cutoffs.</p>
+            </div>
+          </div>
+          <div class="figure-card">
+            <img src="/results/figures/pmri_stratification.png" alt="PMRI Stratification Plot" loading="lazy">
+            <div class="figure-card-body">
+              <h4>Figure 3: Error Stratification by PMRI Reliability Tiers</h4>
+              <p>Brier score and MAE in High PMRI (≥ median) vs Moderate/Low PMRI (&lt; median) test batteries.</p>
+            </div>
+          </div>
+          <div class="figure-card">
+            <img src="/results/figures/calibration_diagrams.png" alt="Calibration Reliability Curves" loading="lazy">
+            <div class="figure-card-body">
+              <h4>Figure 4: Reliability Calibration Diagrams</h4>
+              <p>Empirical reliability curves comparing mean predicted failure probabilities against true positive fractions.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section J: Factual Explainability Section -->
+    <section class="explain-section">
+      <div class="section-card">
+        <h2 class="card-title">Data-Grounded Trajectory Observations</h2>
+        <p class="card-subtitle">Factual summary of observed degradation phenomena up to the selected cutoff cycle.</p>
+
+        <div class="observations-box" id="observations-container">
+          <p class="text-muted">Select a battery above to review observed degradation trends.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p><strong>B.Tech CSE Capstone Project:</strong> Confidence-Aware Peer-Relative Degradation Trajectory Analysis for Early End-of-Life Risk Prediction in Lithium-Ion Batteries.</p>
+      <p class="text-muted">Dataset: MATR / Severson et al. (Nature Energy 2019) • A123 Systems APR18650M1A Cells (1.1 Ah nominal) • 140 Cells • 18 Automated Tests Passing</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

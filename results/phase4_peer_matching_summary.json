@@ -1,0 +1,66 @@
+{
+  "total_records_processed": 420,
+  "eligible_records": 372,
+  "excluded_records": 48,
+  "cutoffs_processed": [
+    40,
+    70,
+    100
+  ],
+  "by_cutoff": {
+    "40": {
+      "eligible_cells": 124,
+      "match_success_count": 124,
+      "insufficient_peers_count": 0,
+      "mean_peer_distance_avg": 0.8674983481709585,
+      "mean_peer_distance_std": 0.40077157832173804,
+      "pmri_mean": 0.7593270845975997,
+      "pmri_min": 0.5136249939215369,
+      "pmri_max": 0.8918891243356102,
+      "pmri_std": 0.08899191634782348,
+      "warning_counts": {
+        "NONE": 122,
+        "HIGH_PEER_DISTANCE": 2
+      },
+      "relative_capacity_deviation_mean": 0.009658725000000014,
+      "relative_slope_deviation_mean": 3.104568385138627e-05
+    },
+    "70": {
+      "eligible_cells": 124,
+      "match_success_count": 124,
+      "insufficient_peers_count": 0,
+      "mean_peer_distance_avg": 0.8683229022270665,
+      "mean_peer_distance_std": 0.39498132242323564,
+      "pmri_mean": 0.7656205698986477,
+      "pmri_min": 0.508853342705748,
+      "pmri_max": 0.9033319000890567,
+      "pmri_std": 0.09156401246057636,
+      "warning_counts": {
+        "NONE": 121,
+        "HIGH_PEER_DISTANCE": 2,
+        "HIGH_PEER_DISPERSION": 1
+      },
+      "relative_capacity_deviation_mean": -0.005365530645161287,
+      "relative_slope_deviation_mean": -2.0891674396261363e-05
+    },
+    "100": {
+      "eligible_cells": 124,
+      "match_success_count": 124,
+      "insufficient_peers_count": 0,
+      "mean_peer_distance_avg": 0.8710848828915524,
+      "mean_peer_distance_std": 0.4002089130381225,
+      "pmri_mean": 0.7704164722524082,
+      "pmri_min": 0.49990803983416715,
+      "pmri_max": 0.9110001299528245,
+      "pmri_std": 0.09558078476049742,
+      "warning_counts": {
+        "NONE": 120,
+        "HIGH_PEER_DISPERSION": 2,
+        "HIGH_PEER_DISTANCE; LOW_RELIABILITY": 1,
+        "HIGH_PEER_DISTANCE": 1
+      },
+      "relative_capacity_deviation_mean": -0.005945724596774201,
+      "relative_slope_deviation_mean": -2.393112193727546e-05
+    }
+  }
+}

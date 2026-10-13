@@ -1,0 +1,31 @@
+{
+  "method_version": "v1.0-weighted-euclidean-standardized",
+  "target_k": 5,
+  "min_k": 3,
+  "matching_features": [
+    "init_policy_c1",
+    "init_policy_soc",
+    "init_policy_c2",
+    "init_q_discharge",
+    "init_internal_resistance",
+    "init_temp_avg",
+    "snap_internal_resistance"
+  ],
+  "feature_weights": {
+    "init_policy_c1": 0.2,
+    "init_policy_soc": 0.15,
+    "init_policy_c2": 0.15,
+    "init_q_discharge": 0.15,
+    "init_internal_resistance": 0.15,
+    "init_temp_avg": 0.1,
+    "snap_internal_resistance": 0.1
+  },
+  "pmri_weights": {
+    "similarity": 0.35,
+    "agreement": 0.3,
+    "availability": 0.2,
+    "completeness": 0.15
+  },
+  "reference_pool": "train_partition_only (41 cells)",
+  "out_of_fold_rule": "train cells exclude self (leave-one-out, 40 candidates)"
+}

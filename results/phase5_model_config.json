@@ -1,0 +1,59 @@
+{
+  "primary_target": "target_fail_within_500",
+  "cutoffs": [
+    40,
+    70,
+    100
+  ],
+  "random_seed": 42,
+  "algorithm": "LogisticRegression(C=1.0, solver='lbfgs', max_iter=1000)",
+  "scaler": "StandardScaler",
+  "threshold_selection": "Youden_J_on_5fold_train_CV",
+  "model_configs": {
+    "M1": {
+      "name": "Condition Baseline",
+      "description": "Baseline model using only initial health state and current cycle snapshot measurements.",
+      "groups": [
+        "init",
+        "snap"
+      ],
+      "expected_feature_count": 18
+    },
+    "M2": {
+      "name": "Individual Trajectory",
+      "description": "Individual degradation model adding historical trajectory slopes, curvature, and differential curve statistics.",
+      "groups": [
+        "init",
+        "snap",
+        "traj",
+        "curve"
+      ],
+      "expected_feature_count": 34
+    },
+    "M3": {
+      "name": "Peer-Relative",
+      "description": "Peer-relative model combining individual features with relative trajectory deviations from matched peers.",
+      "groups": [
+        "init",
+        "snap",
+        "traj",
+        "curve",
+        "peer_traj"
+      ],
+      "expected_feature_count": 42
+    },
+    "M4": {
+      "name": "Confidence-Aware Peer-Relative",
+      "description": "Full proposed model incorporating peer-relative trajectory deviations and peer-match reliability metrics.",
+      "groups": [
+        "init",
+        "snap",
+        "traj",
+        "curve",
+        "peer_traj",
+        "peer_reliability"
+      ],
+      "expected_feature_count": 46
+    }
+  }
+}

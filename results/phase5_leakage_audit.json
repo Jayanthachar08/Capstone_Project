@@ -1,0 +1,51 @@
+{
+  "checks_passed": true,
+  "target_keyword_audit": {
+    "passed": true,
+    "forbidden_keywords_checked": [
+      "eol",
+      "rul",
+      "life",
+      "target",
+      "status",
+      "fail"
+    ],
+    "violations": {}
+  },
+  "configuration_orthogonality_audit": {
+    "passed": true,
+    "feature_counts": {
+      "M1": 18,
+      "M2": 34,
+      "M3": 42,
+      "M4": 46
+    },
+    "hierarchy_verified": true,
+    "errors": []
+  },
+  "partition_disjointness_audit": {
+    "passed": true,
+    "counts": {
+      "train": 41,
+      "primary_test": 43,
+      "secondary_test": 40,
+      "excluded": 16
+    },
+    "overlaps": {
+      "train_vs_primary": [],
+      "train_vs_secondary": [],
+      "primary_vs_secondary": [],
+      "train_vs_excluded": []
+    }
+  },
+  "split_consistency_audit": {
+    "passed": true,
+    "inconsistent_cells": []
+  },
+  "completeness_audit": {
+    "passed": true,
+    "eligible_records_checked": 372,
+    "features_checked": 46,
+    "null_violations": {}
+  }
+}

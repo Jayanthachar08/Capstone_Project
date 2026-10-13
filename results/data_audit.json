@@ -1,0 +1,146 @@
+{
+  "dataset_files": {
+    "batch1": {
+      "filename": "2017-05-12_batchdata_updated_struct_errorcorrect.mat",
+      "size_bytes": 3025320241,
+      "size_gb": 2.818,
+      "raw_cells": 46
+    },
+    "batch2": {
+      "filename": "2017-06-30_batchdata_updated_struct_errorcorrect.mat",
+      "size_bytes": 2007331155,
+      "size_gb": 1.869,
+      "raw_cells": 48
+    },
+    "batch3": {
+      "filename": "2018-04-12_batchdata_updated_struct_errorcorrect.mat",
+      "size_bytes": 3236690412,
+      "size_gb": 3.014,
+      "raw_cells": 46
+    }
+  },
+  "cell_counts": {
+    "raw_total": 140,
+    "retained_eligible": 124,
+    "excluded_total": 16,
+    "batch_breakdown": {
+      "batch1": 46,
+      "batch2": 48,
+      "batch3": 46,
+      "total_raw": 140
+    }
+  },
+  "quality_filter": {
+    "authoritative_source": "Severson et al. (2019) Nature Energy / Braatz Group Load Data.ipynb",
+    "total_excluded": 16,
+    "exclusions": [
+      {
+        "cell_id": "b1c8",
+        "batch": "batch1",
+        "reason": "Batch 1: Channel test terminated before cell reached 80% nominal capacity"
+      },
+      {
+        "cell_id": "b1c10",
+        "batch": "batch1",
+        "reason": "Batch 1: Channel test terminated before cell reached 80% nominal capacity"
+      },
+      {
+        "cell_id": "b1c12",
+        "batch": "batch1",
+        "reason": "Batch 1: Channel test terminated before cell reached 80% nominal capacity"
+      },
+      {
+        "cell_id": "b1c13",
+        "batch": "batch1",
+        "reason": "Batch 1: Channel test terminated before cell reached 80% nominal capacity"
+      },
+      {
+        "cell_id": "b1c22",
+        "batch": "batch1",
+        "reason": "Batch 1: Channel test terminated before cell reached 80% nominal capacity"
+      },
+      {
+        "cell_id": "b2c7",
+        "batch": "batch2",
+        "reason": "Batch 2: Continuation segment of b1c0 (merged into b1c0 per benchmark protocol)"
+      },
+      {
+        "cell_id": "b2c8",
+        "batch": "batch2",
+        "reason": "Batch 2: Continuation segment of b1c1 (merged into b1c1 per benchmark protocol)"
+      },
+      {
+        "cell_id": "b2c9",
+        "batch": "batch2",
+        "reason": "Batch 2: Continuation segment of b1c2 (merged into b1c2 per benchmark protocol)"
+      },
+      {
+        "cell_id": "b2c15",
+        "batch": "batch2",
+        "reason": "Batch 2: Continuation segment of b1c3 (merged into b1c3 per benchmark protocol)"
+      },
+      {
+        "cell_id": "b2c16",
+        "batch": "batch2",
+        "reason": "Batch 2: Continuation segment of b1c4 (merged into b1c4 per benchmark protocol)"
+      },
+      {
+        "cell_id": "b3c2",
+        "batch": "batch3",
+        "reason": "Batch 3: Irregular noisy temperature/voltage profile"
+      },
+      {
+        "cell_id": "b3c23",
+        "batch": "batch3",
+        "reason": "Batch 3: Undefined cycle life (cell reached >2189 cycles without 80% cutoff)"
+      },
+      {
+        "cell_id": "b3c32",
+        "batch": "batch3",
+        "reason": "Batch 3: Undefined cycle life (cell reached >2237 cycles without 80% cutoff)"
+      },
+      {
+        "cell_id": "b3c37",
+        "batch": "batch3",
+        "reason": "Batch 3: Temperature sensor detached / high thermal anomaly"
+      },
+      {
+        "cell_id": "b3c42",
+        "batch": "batch3",
+        "reason": "Batch 3: Noisy sensor channel in test batch"
+      },
+      {
+        "cell_id": "b3c43",
+        "batch": "batch3",
+        "reason": "Batch 3: Loose contact / noisy resistance channel in test batch"
+      }
+    ]
+  },
+  "partitions": {
+    "train_reference_pool_count": 41,
+    "primary_test_count": 43,
+    "secondary_test_count": 40,
+    "excluded_count": 16,
+    "leakage_prevention_rule": "Peer pool for test batteries must be drawn exclusively from train reference pool."
+  },
+  "integrity_checks": {
+    "unique_cell_ids": true,
+    "non_finite_cycle_life_cells": [
+      "b3c23",
+      "b3c32"
+    ],
+    "zero_capacity_findings": {
+      "total_zero_qd_records": 46,
+      "cycle_1_zero_qd_records": 46,
+      "post_cycle_1_zero_qd_records": 0,
+      "explanation": "Cycle 1 discharge capacity is 0 across Batch 1 cells because cycle 1 was unmonitored / diagnostic. All early-life feature extraction starts strictly from Cycle 2 onward."
+    },
+    "cycle_life_statistics_eligible": {
+      "min": 148.0,
+      "max": 2237.0,
+      "mean": 801.6370967741935,
+      "median": 736.5,
+      "std": 378.18286528023884
+    }
+  }
+}
