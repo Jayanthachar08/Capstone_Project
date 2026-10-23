@@ -1,0 +1,255 @@
+import csv
+
+rows = [
+    [
+        "Patent Section / Claim",
+        "Draft Statement in Patent_DRAFT_1",
+        "Source-Code / Artifact Reference",
+        "Verification Status",
+        "Required Technical Correction"
+    ],
+    [
+        "Title",
+        "Confidence-Aware Peer-Relative Degradation Trajectory Analysis for Early End-of-Life Risk Prediction in Lithium-Ion Batteries",
+        "README.md; src/models/model_factory.py; results/phase6_hypothesis_evaluation_report.md",
+        "VERIFIED",
+        "Retain title unchanged; ensure description and claims connect the confidence-aware mechanism to physical sensor telemetry and battery safety screening."
+    ],
+    [
+        "Field of the Invention",
+        "Relates generally to battery health monitoring, battery degradation analysis, and machine-learning-based risk assessment... early end-of-life risk screening of lithium-ion battery cells.",
+        "src/features/feature_engineering.py; src/models/train_models.py",
+        "VERIFIED",
+        "Preserve scope; add explicit technical grounding in electrochemical sensor measurements and battery management system (BMS) advisory screening."
+    ],
+    [
+        "Background of the Invention",
+        "Early degradation during initial cycles is small; conventional approaches rely on individual-cell measurements; peer comparison provides evaluation relative to comparable cells.",
+        "docs/roadmap.md; results/phase6_hypothesis_evaluation_report.md Section 1",
+        "VERIFIED",
+        "Preserve background; strengthen technical motivation regarding domain shifts across charging policies and lack of reference reliability indicators in prior art."
+    ],
+    [
+        "Objectives of the Invention",
+        "Extract battery-condition features up to cutoff; peer matching using standardized features and weighted distance; derive 8 peer-relative features; compute PMRI; predict EOL risk within horizon.",
+        "src/peers/peer_matcher.py; src/peers/trajectory_comparison.py; src/peers/peer_reliability.py; src/features/target_builder.py",
+        "VERIFIED",
+        "Preserve objectives; ensure PMRI objective explicitly describes exponential decay kernels and confidence gating rather than generic combination."
+    ],
+    [
+        "Summary of the Invention",
+        "Weighted Euclidean distance between target cell and eligible reference cells; nearest reference cells selected subject to minimum peer-count requirement; target excluded from own reference set.",
+        "src/peers/peer_matcher.py: lines 42-245 (PeerMatcher)",
+        "VERIFIED",
+        "Explicitly document the 7 matching features, weights (0.20, 0.15, 0.15, 0.15, 0.15, 0.10, 0.10), target k=5, and minimum k=3."
+    ],
+    [
+        "Summary of the Invention",
+        "PMRI combines four components: peer similarity, degradation-trajectory agreement, peer availability, and feature completeness... configurable weights bounded between zero and one.",
+        "src/peers/peer_reliability.py: lines 18-32, 69-102 (PeerReliabilityEvaluator)",
+        "PARTIALLY VERIFIED",
+        "Fully disclose exponential decay formulas for S_sim and S_agree, distance scale d0=2.0, slope dispersion scale sigma0=5e-5 Ah/cycle, and boundary conditions."
+    ],
+    [
+        "Summary of the Invention",
+        "Primary prediction target indicates whether the cell reaches defined EOL (80% of nominal capacity) within next 500 cycles after observation cutoff.",
+        "src/features/target_builder.py: lines 18-26, 72-80 (TargetBuilder.compute_targets_for_cell)",
+        "VERIFIED",
+        "Specify nominal capacity of 1.1 Ah (0.88 Ah EOL threshold), observation cutoffs (40, 70, 100), and clarifying that continuous RUL is an alternative pipeline capability, not a validated classifier output."
+    ],
+    [
+        "Brief Description of Drawings (FIG. 1)",
+        "FIG. 1 illustrates overall system architecture including battery data input, data preprocessing, feature extraction, peer matching, peer-relative analysis, PMRI, EOL prediction, and output/visualization.",
+        "dashboard/server.py; results/phase7_dashboard_integration_report.md; src/peers/peer_pipeline.py",
+        "VERIFIED",
+        "Add explicit reference numerals (100-116) to FIG. 1 and cross-reference them in Detailed Description Section 1-9."
+    ],
+    [
+        "Brief Description of Drawings (FIG. 2)",
+        "FIG. 2 illustrates sequence of operations performed by the proposed method... includes path for insufficient peer availability.",
+        "src/peers/peer_pipeline.py: lines 59-188; src/peers/peer_matcher.py: lines 215-228",
+        "VERIFIED",
+        "Add explicit reference numerals (200-224) to FIG. 2; ensure insufficient peer path clearly branches to peer-match warning and abstention."
+    ],
+    [
+        "Detailed Description - Section 1",
+        "Battery Data Acquisition Module: Receives battery cycling records from public LFP/graphite aging dataset (discharge/charge capacity, IR, temperature, charging time, protocol).",
+        "src/data/loader.py: lines 20-120; Datasets/2017-05-12_batchdata_updated_struct_errorcorrect.mat",
+        "VERIFIED",
+        "Document cell type (commercial cylindrical A123 APR18650M1A, 1.1 Ah LFP/graphite) and cycle 1 diagnostic protocol exclusion."
+    ],
+    [
+        "Detailed Description - Section 2",
+        "Data Preprocessing Module: Prepares records at observation cutoffs 40, 70, 100 cycles; standardizes numerical features using training data only; handles censored cells.",
+        "src/features/modeling_dataset.py: lines 25-118; src/models/leakage_audit.py",
+        "VERIFIED",
+        "State exact cutoff cycles (40, 70, 100) and anti-leakage rules: scaler statistics (mu, sigma) fit strictly on training cells."
+    ],
+    [
+        "Detailed Description - Section 3",
+        "Battery Feature Engineering Module: Four model configurations M1 (18), M2 (34), M3 (42), M4 (46 features).",
+        "src/models/model_factory.py: lines 21-115 (FEATURE_GROUPS, MODEL_CONFIGS)",
+        "VERIFIED",
+        "List complete feature names for each group: init (11), snap (7), traj (11), curve (5), peer_traj (8), peer_reliability (4)."
+    ],
+    [
+        "Detailed Description - Section 4",
+        "Peer Matching Module: Standardizes matching features using training stats; weighted Euclidean distance; top 5 nearest peers, minimum 3; excludes target cell from own reference set.",
+        "src/peers/peer_matcher.py: lines 42-245; tests/test_peer_matching.py",
+        "VERIFIED",
+        "Disclose exact feature weights: init_policy_c1 (0.20), init_policy_soc (0.15), init_policy_c2 (0.15), init_q_discharge (0.15), init_internal_resistance (0.15), init_temp_avg (0.10), snap_internal_resistance (0.10)."
+    ],
+    [
+        "Detailed Description - Section 5",
+        "Peer-Relative Degradation Analysis Module: Calculates 8 peer-relative features (capacity deviation, slope deviation, capacity ratio, fade deviation, IR deviation, peer capacity dispersion, peer slope dispersion, z-score capacity).",
+        "src/peers/trajectory_comparison.py: lines 20-145; tests/test_peer_no_leakage.py",
+        "VERIFIED",
+        "Provide mathematical formulas, units, and baseline cycle window [2, N_obs] for all 8 features."
+    ],
+    [
+        "Detailed Description - Section 6",
+        "Peer-Match Reliability Assessment Module: PMRI combines similarity (0.35), agreement (0.30), availability (0.20), completeness (0.15); warnings: <5 peers, mean dist >2.0, slope dispersion >1e-4 Ah/cycle, PMRI <0.50.",
+        "src/peers/peer_reliability.py: lines 18-32, 69-188; tests/test_peer_reliability.py",
+        "VERIFIED",
+        "Disclose full equations: S_sim = exp(-d_bar / 2.0); S_agree = exp(-sigma_slope / 5e-5); S_avail = min(1.0, k/5) if k>=3 else 0.0; S_comp = valid_feats / 7. Emphasize PMRI is not failure probability."
+    ],
+    [
+        "Detailed Description - Section 7",
+        "End-of-Life Risk Prediction Module: Primary target EOL <= cutoff + 500 cycles; EOL = 80% nominal; standardized logistic regression with L2 regularization, balanced class weights; Platt scaling; M4 includes 4 PMRI component features.",
+        "src/models/train_models.py: lines 128-188; src/models/model_factory.py: lines 81-86, 140-167",
+        "CONFLICT / CORRECTION REQUIRED",
+        "Correct M4 feature set: M4 adds pmri, peer_similarity_score, peer_agreement_score, mean_peer_distance (not all 4 sub-components). Disclose logistic regression hyperparameters (C=1.0, solver='lbfgs', max_iter=1000)."
+    ],
+    [
+        "Detailed Description - Section 8",
+        "Model Validation Module: Evaluates M1-M4 across training, primary test, and secondary test partitions; checks for data leakage; evaluates AUROC, AUPRC, Brier score, ECE, F1-score.",
+        "src/models/evaluate_models.py; src/evaluation/hypothesis_evaluator.py; results/phase5_model_metrics.csv; results/phase6_model_differences.csv",
+        "VERIFIED",
+        "Insert verified numerical tables: In-distribution primary test shows statistical parity (M1: 0.918-0.933, M2: 0.909-0.916, M3: 0.872-0.909, M4: 0.868-0.909); Secondary test shows peer-relative domain robustness (M3: 0.974 vs M1: 0.513 at Cutoff 70)."
+    ],
+    [
+        "Detailed Description - Section 9",
+        "Interactive Dashboard Module: Python HTTP server, browser UI, predictions, peer trajectories, centroid overlays, PMRI gauge, reliability warnings.",
+        "dashboard/server.py; dashboard/app.js; dashboard/index.html; results/phase7_dashboard_integration_report.md",
+        "VERIFIED",
+        "Describe actual implementation: Python standard-library http.server, vanilla JS, Chart.js, offline zero-dependency architecture, in-memory REST endpoints."
+    ],
+    [
+        "Detailed Description - Section 10",
+        "Illustrative Example of Operation: Generic non-limiting walkthrough of a cell evaluated at Cutoff 70.",
+        "results/phase4_peer_matching_report.md Section 4 (Case 1: b1c0, Case 2: b3c0)",
+        "VERIFIED",
+        "Ground illustrative embodiment using verified real benchmark cell b1c0 (Cycle 70, 3.6C(80%)-3.6C, peers b1c1, b1c5, b1c17, b2c29, b1c3, mean dist 0.614, PMRI 0.825, rel cap dev +0.007 Ah)."
+    ],
+    [
+        "Detailed Description - Section 11",
+        "Security, Data Integrity and Fail-Safe Considerations: Strict train-test separation, self-exclusion, graceful handling of missing features, PMRI advisory alerts.",
+        "tests/test_no_leakage.py; tests/test_model_no_leakage.py; tests/test_peer_no_leakage.py",
+        "VERIFIED",
+        "Preserve and formalize anti-leakage safeguards (cell-level split invariance, preprocessor parameter isolation, test outcome sequestering)."
+    ],
+    [
+        "Detailed Description - Section 12",
+        "Advantages of the Invention: Early EOL screening, peer-relative evaluation, PMRI explicit reliability, probability calibration.",
+        "results/phase6_hypothesis_evaluation_report.md Section 5",
+        "PARTIALLY VERIFIED",
+        "Refine advantages to match verified evidence: emphasize domain-shift robustness across varying charging protocols, peer-match unreliability detection, and avoidance of false confidence."
+    ],
+    [
+        "Detailed Description - Section 13",
+        "Alternative Embodiments: Other chemistries, configurable k, alternative horizons, fleet monitoring.",
+        "src/features/target_builder.py; src/models/model_factory.py (RandomForest)",
+        "VERIFIED",
+        "Clearly distinguish implemented and experimentally validated capabilities (LFP cells, binary target <=500 cycles, logistic regression) from proposed alternative embodiments."
+    ],
+    [
+        "Detailed Description - Section 14",
+        "Industrial Applicability: Battery-aging research, cell manufacturing screening, predictive maintenance, battery management systems.",
+        "results/phase7_dashboard_integration_report.md Section 9",
+        "VERIFIED",
+        "Retain industrial applicability; emphasize integration into battery test automation and battery pack screening lines."
+    ],
+    [
+        "Claim 1",
+        "A computer-implemented system comprising data acquisition, preprocessing/feature engineering, peer matching, peer-relative analysis, PMRI, and ML classification module.",
+        "src/peers/peer_pipeline.py; src/models/train_models.py",
+        "DEFICIENT / NEEDS RESTRUCTURING",
+        "Restructure Claim 1 to recite a concrete technical system/method processing physical electrochemical sensor signals, performing domain-shift normalization and PMRI confidence gating to generate protective battery screening control signals, satisfying Section 3(k) technical effect standards."
+    ],
+    [
+        "Claim 2",
+        "System of claim 1, wherein peer matching standardizes features using training stats, calculates weighted Euclidean distance, selects up to 5 nearest peers (min 3), and excludes target from own reference set.",
+        "src/peers/peer_matcher.py: lines 42-245",
+        "VERIFIED",
+        "Incorporate specific matching feature set and weighting structure in dependent claims."
+    ],
+    [
+        "Claim 3",
+        "System of claim 1, wherein peer-relative analysis derives 8 specific features (capacity deviation, slope deviation, capacity ratio, fade deviation, IR deviation, peer capacity dispersion, peer slope dispersion, z-score capacity).",
+        "src/peers/trajectory_comparison.py: lines 45-54",
+        "VERIFIED",
+        "Retain claim; ensure feature names and definitions match code exactly."
+    ],
+    [
+        "Claim 4",
+        "System of claim 1, wherein PMRI module calculates composite score from similarity, agreement, availability, completeness, and generates warnings on count, distance, dispersion, or score.",
+        "src/peers/peer_reliability.py: lines 69-188",
+        "VERIFIED",
+        "Incorporate exponential decay relationships and scale parameters into dependent claims."
+    ],
+    [
+        "Claim 5",
+        "System of claim 1, wherein ML classification module comprises M1, M2, M3, M4 configurations enabling comparative evaluation.",
+        "src/models/model_factory.py: lines 90-115",
+        "VERIFIED",
+        "Retain as dependent claim specifying feature subsets and comparative ablation capability."
+    ],
+    [
+        "Claim 6",
+        "System of claim 1, wherein ML classification applies standardized logistic regression with regularization, balanced class weighting, and Platt calibration from training data.",
+        "src/models/model_factory.py: lines 140-167; src/models/calibration.py: lines 34-65",
+        "VERIFIED",
+        "Retain as dependent claim; document L2 penalty, solver, and out-of-fold calibration."
+    ],
+    [
+        "Claim 7",
+        "System of claim 1, wherein EOL threshold is 80% nominal capacity and target is reaching threshold within 500 cycles following cutoff.",
+        "src/features/target_builder.py: lines 18-26, 72-80",
+        "VERIFIED",
+        "Retain as dependent claim specifying 0.88 Ah threshold and cutoffs 40, 70, 100."
+    ],
+    [
+        "Claim 8",
+        "System of claim 1, further comprising interactive dashboard presenting risk, classification, peer trajectories, PMRI values, warnings, and evaluation visualizations.",
+        "dashboard/server.py; dashboard/index.html",
+        "VERIFIED",
+        "Retain as dependent claim reciting interactive visual presentation of peer trajectories and centroid overlay."
+    ],
+    [
+        "Claim 9",
+        "A computer-implemented method for early EOL risk screening... receiving measurements, selecting cutoff, extracting features, standardizing, calculating distance, selecting peers, deriving relative features, calculating PMRI, ML classifying, and presenting.",
+        "src/peers/peer_pipeline.py; src/models/train_models.py",
+        "DEFICIENT / NEEDS RESTRUCTURING",
+        "Restructure independent method claim to focus on the technical interplay: transforming physical electrochemical signals, normalizing domain shifts via peer matching, and confidence-gating predictions using PMRI."
+    ],
+    [
+        "Claim 10",
+        "Method of claim 9, wherein training, preprocessing and probability-calibration procedures use designated training data, and held-out test cells are excluded from fitting.",
+        "src/models/leakage_audit.py; tests/test_no_leakage.py",
+        "VERIFIED",
+        "Retain as dependent claim defining strict anti-leakage reference pool isolation."
+    ],
+    [
+        "Abstract",
+        "Discloses computer-implemented system for peer-relative degradation analysis and early EOL risk prediction... 80% nominal capacity... 500 cycles horizon... M1-M4 configurations... dashboard.",
+        "Patent_DRAFT_1.docx Abstract",
+        "VERIFIED",
+        "Update Abstract for consistency with revised claims, emphasizing domain-shift robustness and PMRI confidence gating."
+    ]
+]
+
+with open('docs/patent_implementation_traceability.csv', 'w', newline='', encoding='utf-8') as f:
+    writer = csv.writer(f)
+    writer.writerows(rows)
+
+print(f"Generated docs/patent_implementation_traceability.csv with {len(rows)-1} mapped items.")

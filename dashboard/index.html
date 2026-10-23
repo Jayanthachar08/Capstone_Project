@@ -521,6 +521,8 @@
 
       <div class="research-tabs-bar" id="research-tabs-bar">
         <button class="research-tab-btn active" data-tab="tab-perf">Model Performance Benchmark</button>
+        <button class="research-tab-btn" data-tab="tab-multi-algo">Multi-Algorithm Benchmark</button>
+        <button class="research-tab-btn" data-tab="tab-peer-controls">Peer Controls &amp; Selective Prediction</button>
         <button class="research-tab-btn" data-tab="tab-hyp">Hypothesis Verdicts (H1–H4)</button>
         <button class="research-tab-btn" data-tab="tab-diff">Paired Bootstrap Differences</button>
         <button class="research-tab-btn" data-tab="tab-figs">Publication Visualizations</button>
@@ -549,6 +551,100 @@
             </thead>
             <tbody id="research-metrics-tbody">
               <!-- Populated dynamically from /api/models/metrics -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Multi-Algorithm Benchmark -->
+      <div class="research-panel" id="tab-multi-algo" style="display: none;">
+        <div class="card-header-flex" style="margin-bottom: 0.75rem;">
+          <div>
+            <h4 class="subhead">Modular Machine Learning Algorithm Comparison</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              Standardized 5-fold training CV protocol and held-out Primary Test set (N=43) across 4 algorithm families.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <label for="filter-algo-select" style="font-size: 0.82rem; color: var(--text-muted);">Algorithm:</label>
+            <select id="filter-algo-select" class="form-select form-select-sm" style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.25rem 0.5rem; font-size: 0.82rem;">
+              <option value="all">All Algorithms</option>
+              <option value="logistic_regression">Logistic Regression (Baseline)</option>
+              <option value="random_forest">Random Forest</option>
+              <option value="rbf_svm">RBF-SVM</option>
+              <option value="hist_gradient_boosting">HistGradientBoosting</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="research-table" id="multi-algo-table">
+            <thead>
+              <tr>
+                <th>Cutoff</th>
+                <th>Algorithm</th>
+                <th>Family</th>
+                <th>Model</th>
+                <th>Partition</th>
+                <th>AUROC</th>
+                <th>AUPRC</th>
+                <th>Brier Score</th>
+                <th>Sensitivity</th>
+                <th>Specificity</th>
+                <th>F1-Score</th>
+              </tr>
+            </thead>
+            <tbody id="multi-algo-tbody">
+              <!-- Populated dynamically from /api/research/algorithms -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Peer Controls & Selective Prediction -->
+      <div class="research-panel" id="tab-peer-controls" style="display: none;">
+        <h4 class="subhead">Multi-Seed Randomized Peer Controls (Empirical Null Distribution)</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          20 distinct random seeds permuting peer associations vs genuine peer matching (M3). Proves peer signal is non-random.
+        </p>
+        <div class="table-responsive" style="margin-bottom: 1.5rem;">
+          <table class="research-table" id="peer-controls-table">
+            <thead>
+              <tr>
+                <th>Cutoff</th>
+                <th>Genuine M3 AUROC</th>
+                <th>Null AUROC (Mean &plusmn; Std)</th>
+                <th>Empirical p-value</th>
+                <th>Genuine Brier</th>
+                <th>Null Brier (Mean)</th>
+                <th>Statistical Verdict</th>
+              </tr>
+            </thead>
+            <tbody id="peer-controls-tbody">
+              <!-- Populated dynamically from /api/research/peer-controls -->
+            </tbody>
+          </table>
+        </div>
+
+        <h4 class="subhead">Selective Prediction: Risk-Coverage Trade-Off Curve</h4>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          Held-out Primary Test performance when abstaining on low-reliability predictions. Thresholds chosen strictly on training CV out-of-fold predictions.
+        </p>
+        <div class="table-responsive">
+          <table class="research-table" id="selective-pred-table">
+            <thead>
+              <tr>
+                <th>Cutoff</th>
+                <th>Selection Mechanism</th>
+                <th>Target Coverage</th>
+                <th>Training Threshold (&tau;)</th>
+                <th>Realized Test Coverage</th>
+                <th>Retained AUROC</th>
+                <th>Retained Brier Score</th>
+                <th>Retained Accuracy</th>
+              </tr>
+            </thead>
+            <tbody id="selective-pred-tbody">
+              <!-- Populated dynamically from /api/research/selective-prediction -->
             </tbody>
           </table>
         </div>

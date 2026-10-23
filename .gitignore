@@ -69,3 +69,7 @@ scratch/
 tmp/
 temp/
 *.log
+
+# Third-party copyrighted research publications (IEEE, Elsevier, Springer PDFs)
+Researchpapers/
+

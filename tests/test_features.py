@@ -84,6 +84,59 @@ class TestFeatureEngineering(unittest.TestCase):
             "Differential curve log10 variance outside plausible range!",
         )
 
+    def test_post_cutoff_measurements_do_not_leak_into_features(self):
+        """Rule: Modifying measurements after cutoff leaves extracted features strictly invariant."""
+        from src.features.feature_engineering import FeatureEngineer
+
+        # Create synthetic cycle series up to 200 cycles
+        cycles = np.arange(1, 201)
+        base_df = pd.DataFrame({
+            "cycle": cycles,
+            "QDischarge": 1.05 - 0.0001 * cycles,
+            "QCharge": 1.06 - 0.0001 * cycles,
+            "IR": 0.015 + 0.00001 * cycles,
+            "Tmax": 35.0 + 0.01 * cycles,
+            "Tavg": 32.0 + 0.005 * cycles,
+            "Tmin": 30.0 + 0.002 * cycles,
+            "chargetime": 45.0 - 0.01 * cycles,
+        })
+        meta = pd.Series({"policy": "3.6C(80%)-3.6C"})
+        curve_dummy = {
+            "curve_delta_q_var_log10": -4.0,
+            "curve_delta_q_min": -0.05,
+            "curve_delta_q_mean": -0.02,
+            "curve_delta_q_skew": 0.1,
+            "curve_delta_q_kurtosis": 2.5,
+        }
+
+        # Extract features at cutoff 40 on clean data
+        feats_original = FeatureEngineer.extract_cell_features_at_cutoff(
+            base_df, meta, cutoff=40, curve_features=curve_dummy
+        )
+
+        # Corrupt data strictly after cutoff (cycle > 40)
+        corrupted_df = base_df.copy()
+        corrupted_df.loc[corrupted_df["cycle"] > 40, "QDischarge"] = 0.001
+        corrupted_df.loc[corrupted_df["cycle"] > 40, "IR"] = 999.0
+        corrupted_df.loc[corrupted_df["cycle"] > 40, "Tmax"] = 1000.0
+
+        feats_after_corruption = FeatureEngineer.extract_cell_features_at_cutoff(
+            corrupted_df, meta, cutoff=40, curve_features=curve_dummy
+        )
+
+        for k in feats_original:
+            val_orig = feats_original[k]
+            val_corrupt = feats_after_corruption[k]
+            if np.isnan(val_orig):
+                self.assertTrue(np.isnan(val_corrupt))
+            else:
+                self.assertEqual(
+                    val_orig,
+                    val_corrupt,
+                    f"Feature '{k}' changed when post-cutoff cycle data was modified!",
+                )
+
+
 
 if __name__ == "__main__":
     unittest.main()

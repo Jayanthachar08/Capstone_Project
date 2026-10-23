@@ -124,7 +124,7 @@ class FeatureEngineer:
 
             delta_q = q_cut - q_base
             var_val = float(np.var(delta_q))
-            log10_var = float(np.log10(var_val)) if var_val > 0 else -10.0
+            log10_var = float(np.log10(var_val)) if var_val > 0 else np.nan
 
             return {
                 "curve_delta_q_var_log10": log10_var,

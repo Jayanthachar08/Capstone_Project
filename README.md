@@ -1,7 +1,7 @@
 # Confidence-Aware Peer-Relative Degradation Trajectory Analysis for Early End-of-Life Risk Prediction in Lithium-Ion Batteries
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
-[![Tests](https://img.shields.io/badge/tests-65%2F65%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-83%2F83%20passed-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-Academic%20Research-lightgrey.svg)]()
 
 > **B.Tech Computer Science & Engineering — Capstone Project (7th Semester)**  
@@ -34,9 +34,10 @@ Existing early-prediction approaches (such as the landmark work by Severson et a
 3. **Multi-Cutoff Feature Engineering:** Construct 34 early-life features across four physical groups at early observation cutoffs $N_{\text{obs}} \in \{40, 70, 100\}$ cycles.
 4. **Develop a Peer-Matching Subsystem:** Pair test batteries strictly with training reference peers using early-life operating features and compute relative trajectory deviations.
 5. **Formulate the Peer-Match Reliability Index (PMRI):** Define an interpretable composite metric quantifying reference neighborhood support to gate or weight predictions and advise model abstention.
-6. **Train & Evaluate Controlled Model Configurations (M1–M4):** Empirically quantify the value of each information layer for binary EOL risk screening ($\text{EOL} \le 500$ cycles).
-7. **Conduct Hypothesis Testing (H1–H4):** Statistically validate the research questions using paired bootstrap comparisons and robustness stress testing.
-8. **Interactive Screening Dashboard:** Deliver an interactive, offline-capable visualization platform for faculty and research demonstration.
+6. **Train & Evaluate Controlled Model Configurations (M1–M5):** Empirically quantify the value of each information layer for binary EOL risk screening ($\text{EOL} \le 500$ cycles).
+7. **Develop M5 Adaptive Peer-Trust & Counterfactual Engine:** Systematically stress-test peer reference sets via Leave-One-Out, Replacement, and Leave-Two-Out perturbations, deriving counterfactual variance $U$ and adaptive trust $T$.
+8. **Conduct Hypothesis Testing (H1–H4):** Statistically validate the research questions using paired bootstrap comparisons and robustness stress testing.
+9. **Interactive Screening Dashboard ("BATTERY INTELLIGENCE"):** Deliver an interactive, offline-capable 9-view visualization platform with laboratory cycler hardware CSV validation.
 
 ---
 
@@ -62,7 +63,7 @@ Train (41) / Test1 (43) / Test2 (40)                                        N_ob
                                            │
                                            ▼
                       [Peer-Matching & PMRI Subsystem]
-                      • k-NN Matching strictly against Train Pool
+                      • k-NN Matching strictly against Train Pool (k=5)
                       • Trajectory Deviation (Capacity, Slopes)
                       • PMRI (Similarity, Coverage, Agreement, Consistency)
                                            │
@@ -74,9 +75,17 @@ Train (41) / Test1 (43) / Test2 (40)                                        N_ob
                       • M4: Confidence-Aware PMRI (46 feats)
                                            │
                                            ▼
-                      [Evaluation & Research Dashboard]
-                      • AUROC, AUPRC, Brier Score, Bootstrap CIs
-                      • Interactive HTML5/CSS/Vanilla JS Dashboard
+                      [M5 Adaptive Counterfactual Engine]
+                      • Systematic Peer Perturbations (LOO, Rep, LTO)
+                      • Instability Score U = std({p_pert})
+                      • Adaptive Peer Trust T = R · exp(-λ U)
+                      • Calibrated Blending: p_M5 = T·p_peer + (1-T)·p_hist
+                      • Selective Abstention Policy
+                                           │
+                                           ▼
+                      [BATTERY INTELLIGENCE Dashboard]
+                      • 9 Sidebar Views (M5 Engine, Hardware Ingestion)
+                      • AUROC, AUPRC, Brier Score, Bootstrap CIs (B=1000)
 ```
 
 ---
@@ -152,7 +161,7 @@ $$\text{PMRI} = 0.35 \cdot S_{\text{sim}} + 0.25 \cdot S_{\text{cov}} + 0.25 \cd
 
 ---
 
-## 9. Machine Learning Model Configurations (M1–M4)
+## 9. Machine Learning Model Configurations (M1–M5)
 
 All models are trained for binary EOL screening: **$\text{Target} = \mathbb{I}(\text{EOL} \le 500\text{ cycles})$** using regularized logistic regression pipelines with standard scaling. Decision thresholds $\tau$ are fitted strictly on 5-fold training cross-validation to maximize balanced F1 without test label leakage.
 
@@ -162,10 +171,52 @@ All models are trained for binary EOL screening: **$\text{Target} = \mathbb{I}(\
 | **M2** | Degradation History | 34 | M1 features + Trajectory slopes, curvature, and $\Delta Q(V)$ curves. |
 | **M3** | Peer-Relative | 42 | M2 features + 8 peer-relative trajectory deviations from reference neighbors. |
 | **M4** | Confidence-Aware | 46 | M3 features + PMRI composite score and 4 sub-component metrics. |
+| **M5** | Adaptive Trust & Counterfactual | 46 + U + T | Dual-engine blend of peer-relative $p_{\text{peer}}$ and trajectory $p_{\text{history}}$ weighted by adaptive trust $T = R \cdot \exp(-\lambda U)$. |
 
 ---
 
-## 10. Empirical Research Results (Phase 6 Verification)
+## 10. M5: Adaptive Peer-Trust & Counterfactual Risk Engine
+
+The M5 engine addresses a central failure mode of instance-based prognostics: **counterfactual peer instability**. When the composition of a battery's reference neighborhood is fragile, small perturbations in peer selection can cause large swings in predicted risk.
+
+### 10.1 Mathematical Formulation
+1. **Systematic Counterfactual Perturbations:** For each target battery, 12 counterfactual reference sets are evaluated:
+   - 5 Leave-One-Peer-Out (LOO) subsets: $C_{k \setminus \{i\}}$
+   - 5 Single-Peer Replacements: substituting each peer $i$ with candidate peer $k+1$
+   - 1 Leave-Two-Out (LTO) subset: dropping the two furthest peers
+   - 1 Original reference set baseline
+2. **Counterfactual Instability Metric ($U$):**
+   $$U = \text{std}\left(\{p(y \mid C_{\text{pert}})\}\right)$$
+3. **Adaptive Peer-Trust Scaling ($T$):**
+   $$T = R \cdot \exp(-\lambda U), \quad \lambda \ge 0$$
+   where $R$ is the Peer-Match Reliability Index (PMRI) and $\lambda$ is tuned strictly on 5-fold training cross-validation (minimizing Brier score: $\lambda = 20.0$ at cutoffs 40 and 100, $\lambda = 0.0$ at cutoff 70).
+4. **Calibrated Blended Risk ($p_{M5}$):**
+   $$p_{M5} = T \cdot p_{\text{peer}} + (1 - T) \cdot p_{\text{history}}$$
+5. **Selective Abstention Policy:** If $T < \tau_{\text{trust}}$ or $U > \tau_{\text{instability}}$, automated risk prediction is flagged with an explicit abstention reason (`NOMINAL_TRUST`, `LOW_ADAPTIVE_TRUST`, `EXCESSIVE_COUNTERFACTUAL_INSTABILITY`, or `INSUFFICIENT_REFERENCE_COVERAGE`).
+
+### 10.2 Empirical Validation of Instability Metric
+The correlation between counterfactual perturbation variance $U$ and absolute prediction error $|y - p|$ is consistently positive across cutoffs:
+- **Cutoff 40:** Pearson $r = +0.324$
+- **Cutoff 70:** Pearson $r = +0.191$
+- **Cutoff 100:** Pearson $r = +0.445$
+
+This provides empirical confirmation that high counterfactual instability signals higher prediction error risk, validating the exponential penalty $\exp(-\lambda U)$.
+
+### 10.3 M5 Ablation Experiments (Primary Test Cohort):
+| Cutoff | Mode | Description | Brier Score | AUROC | AUPRC |
+| :---: | :--- | :--- | :---: | :---: | :---: |
+| 40 | **Full M5** | PMRI + Instability Penalty ($T = R \cdot e^{-\lambda U}$) | **0.1459** | **0.8636** | **0.6548** |
+| 40 | `no_pmri` | Instability penalty only ($T = e^{-\lambda U}$) | 0.1462 | 0.8636 | 0.6548 |
+| 40 | `no_instability` | PMRI weight only ($T = R$) | 0.1459 | 0.8636 | 0.6548 |
+| 40 | `fixed_blend` | Static 50/50 blend ($T = 0.5$) | 0.1465 | 0.8409 | 0.5960 |
+| 70 | **Full M5** | PMRI + Instability Penalty | **0.1274** | **0.8409** | **0.7073** |
+| 70 | `fixed_blend` | Static 50/50 blend ($T = 0.5$) | 0.1293 | 0.8352 | 0.6974 |
+| 100 | **Full M5** | PMRI + Instability Penalty | **0.1042** | **0.8932** | **0.8197** |
+| 100 | `fixed_blend` | Static 50/50 blend ($T = 0.5$) | 0.1047 | 0.8955 | 0.8307 |
+
+---
+
+## 11. Empirical Research Results (Phase 6 & 7 Verification)
 
 Evaluated on the held-out Primary Test Cohort ($N = 43$ cells; 1 excluded due to cycle life $< 40$, 11 positive early-failure cases, 32 negative cases):
 
@@ -191,27 +242,41 @@ Evaluated on the held-out Primary Test Cohort ($N = 43$ cells; 1 excluded due to
 
 ---
 
-## 11. Interactive Screening Dashboard
+## 12. "BATTERY INTELLIGENCE" Interactive Research Dashboard
 
-The integrated dashboard provides an intuitive, offline interface for research review:
+The integrated dashboard provides an offline, responsive scientific workstation across nine persistent views:
 
 ```
 dashboard/
 ├── assets/
 │   └── chart.umd.min.js          # Offline Chart.js v4.4.2 bundle
-├── index.html                    # Semantic HTML5 scientific dashboard
-├── styles.css                    # Professional dark navy/teal responsive styling
-├── app.js                        # State manager, Chart.js renderer, API client
+├── index.html                    # 9-view sidebar interface with BATTERY INTELLIGENCE brand
+├── styles.css                    # Professional dark navy/teal scientific styling
+├── app.js                        # State manager, Chart.js renderers, hardware validator
 ├── server.py                     # High-performance Python standard library REST server
 └── README.md                     # Dedicated dashboard demonstration guide
 ```
 
-### Key Dashboard Modules:
-1. **Multi-Cutoff Trajectory Viewer:** Cycle series plotting ($Q_d$, $IR$, $T_{\text{max}}$, $T_{\text{avg}}$, charge time) with early-life observation clipping.
-2. **ML Risk Prediction Matrix (Section H):** Live 4-model probability comparisons against training-CV thresholds, risk classifications, and sequestered ground truth.
-3. **Peer Trajectory Centroid Canvas (Section I):** Target cell trajectory overlaid against top-5 reference peers and the computed mean peer centroid curve.
-4. **PMRI Confidence Gauge (Section J):** Radial composite score, four animated component progress bars, and automated low-density warning banners.
-5. **Research Showcase (Section K):** Filterable benchmark tables, hypothesis verdict summaries, paired bootstrap confidence intervals, and embedded publication figures.
+### Nine Interactive Navigation Views:
+1. **Overview:** Platform executive summary, cohort KPI cards, elevated risk tallies across M1–M5, and quick navigation portals.
+2. **Battery Explorer:** Interactive cell selector, cutoff selector (40/70/100/full), temporal masking alert banner, physical summary cards, 34-feature inspector, and factual observations.
+3. **Degradation Trajectories:** Chart.js multi-metric viewer ($Q_d$, $IR$, $T_{\text{max}}$, $T_{\text{avg}}$, charge time) with nominal reference (1.10 Ah), 80% EOL line (0.88 Ah), and multi-cell comparison tool.
+4. **Peer Analysis:** Scientifically matched reference peer table ($k=5$), aligned trajectory overlay chart (target vs 5 peers + centroid), relative trajectory deviation metrics, and PMRI gauge card.
+5. **M5 Robustness Engine:** Dedicated M5 interface displaying counterfactual perturbation traces table, sensitivity waterfall bar chart, perturbation variance $U$, adaptive trust $T$, and selective abstention status.
+6. **Risk & Calibration:** Five-model comparative risk matrix (M1–M5), Brier score comparison, calibration curves, threshold slider, and sequestered ground-truth reference box.
+7. **Research Benchmark:** Master performance table, hypothesis evaluation verdicts (H1–H4), M5 ablation studies table, paired bootstrap differences with 95% CIs, and CSV/JSON export download buttons.
+8. **Hardware Validation:** Technical schema specification, drag-and-drop CSV upload, sample valid/corrupt loaders, and real-time schema and physical bounds audit panel.
+9. **Methodology & About:** Project provenance (Severson et al. 2019 citation), 16 channel exclusion reasons categorized, mathematical formulations of PMRI, $U$, $T$, and $p_{M5}$, and formal patent review disclosure notice.
+
+---
+
+## 13. Patentability & Prior Disclosure Assessment
+
+A formal intellectual property audit was conducted to evaluate the patentability of the PMRI and M5 adaptive trust algorithms. Full documentation is provided in [`docs/patent_review.md`](docs/patent_review.md).
+
+- **Prior Public Disclosure:** The complete codebase, mathematical equations, and experimental evaluation reports have been disclosed publicly in university capstone submissions and via the open GitHub repository (`https://github.com/Jayanthachar08/Capstone_Project`).
+- **Legal Implications:** Under international patent conventions (e.g. EPC Article 54), prior public disclosure constitutes an absolute bar to patent novelty. In the United States (35 U.S.C. § 102), a 1-year personal grace period exists, but pure mathematical algorithms are generally non-patentable without integration into physical BMS embedded hardware.
+- **Strategic Recommendation:** Maintain the project as an open-source, peer-reviewed academic contribution with software copyright under the MIT license, functioning as a defensive publication that preserves academic attribution while preventing third-party patent lock-in.
 
 ---
 
@@ -258,24 +323,33 @@ Capstone_Project/
 │   ├── phase6_hypothesis_summary.json      # Machine-readable hypothesis verdicts
 │   ├── phase6_model_differences.csv        # Paired bootstrap differences (95% CI)
 │   ├── phase6_robustness_results.csv       # Stress test evaluations across Exps A-F
-│   └── phase7_dashboard_integration_report.md # Full dashboard integration report
+│   ├── m5_predictions.csv                  # 372 M5 validated predictions with U and T scores
+│   ├── m5_peer_robustness.csv              # 4,464 counterfactual perturbation traces
+│   ├── m5_ablation_results.csv             # 12 ablation experiment evaluations
+│   ├── m5_evaluation.json                  # Machine-readable M5 benchmark metrics & diagnostics
+│   └── m5_evaluation_report.md             # Formal research evaluation report for M5
 ├── src/                                    # Core scientific Python packages
 │   ├── data/loader.py                      # Streaming HDF5 MATLAB dataset parser
 │   ├── features/                           # Feature extraction & target construction
 │   │   ├── feature_engineering.py          # 34-feature extraction pipeline
 │   │   └── target_builder.py               # EOL, RUL, and binary target builder
-│   ├── peers/                              # Peer matching & reliability module
+│   ├── peers/                              # Peer matching & robustness module
 │   │   ├── peer_matcher.py                 # k-NN reference peer selector
 │   │   ├── peer_reliability.py             # PMRI formulation & computation
-│   │   └── peer_pipeline.py                # End-to-end peer relative feature pipeline
+│   │   ├── peer_pipeline.py                # End-to-end peer relative feature pipeline
+│   │   └── peer_robustness.py              # Counterfactual perturbation engine (LOO, Rep, LTO)
 │   ├── models/                             # Machine learning model pipelines
 │   │   ├── model_configurations.py         # M1-M4 feature set and pipeline definitions
 │   │   ├── model_pipeline.py               # Training, CV threshold tuning, evaluation
-│   │   └── train_models.py                 # Reproducible model training execution script
+│   │   ├── train_models.py                 # Reproducible model training execution script
+│   │   ├── adaptive_peer_trust.py          # M5 Adaptive trust engine T = R * exp(-lambda * U)
+│   │   └── evaluate_m5.py                  # End-to-end M5 evaluation and ablation workflow
 │   └── evaluation/                         # Statistical hypothesis evaluation
 │       └── hypothesis_evaluator.py         # Paired bootstrap & robustness evaluator
-├── tests/                                  # Comprehensive automated test suite
-│   ├── test_dashboard.py                   # Dashboard API and data manager tests (9)
+├── tests/                                  # Comprehensive automated test suite (79 tests)
+│   ├── test_adaptive_trust.py              # M5 adaptive trust formulation & tuning tests (5)
+│   ├── test_m5_robustness.py               # Counterfactual perturbation engine tests (5)
+│   ├── test_dashboard.py                   # Dashboard API, M5 endpoints & hardware tests (13)
 │   ├── test_features.py                    # Feature extraction bounds tests (4)
 │   ├── test_model_configurations.py        # Model feature isolation tests (5)
 │   ├── test_model_evaluation.py            # Metrics and calibration tests (4)
@@ -284,6 +358,7 @@ Capstone_Project/
 │   ├── test_peer_matching.py               # Reference pool isolation tests (7)
 │   ├── test_peer_no_leakage.py             # Peer feature anti-leakage tests (5)
 │   ├── test_peer_reliability.py            # PMRI bounding and monotonicity tests (6)
+│   ├── test_data_integrity.py              # Raw data extraction and baseline tests (18)
 │   └── test_targets.py                     # Target builder & censoring tests (3)
 ├── .env.example                            # Optional server configuration template
 ├── .gitignore                              # Comprehensive Git exclusion rules
@@ -293,7 +368,7 @@ Capstone_Project/
 
 ---
 
-## 13. Getting Started & Reproduction Guide
+## 14. Getting Started & Reproduction Guide
 
 ### Prerequisites
 - Python 3.11+
@@ -306,48 +381,73 @@ cd Capstone_Project
 ```
 
 ### 2. Set Up Virtual Environment (Recommended)
-```bash
-python -m venv venv
-# On Windows:
-venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
+```powershell
+# Windows PowerShell:
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# Linux / macOS:
+python -m venv .venv
+source .venv/bin/activate
 ```
 
 ### 3. Install Dependencies
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
 ### 4. Run the Automated Test Suite
-To verify environment setup, data integrity, and leakage constraints across all 65 automated tests:
-```bash
+To verify environment setup, data integrity, anti-leakage invariants, and dashboard APIs across all 83 automated unit tests:
+```powershell
 python -m unittest discover -s tests -v
 ```
-*Expected result:* `Ran 65 tests in ~1.5s. OK`
+*Expected output:* `Ran 83 tests in ~1.8s. OK`
 
 ---
 
-## 14. Running Pipelines & Dashboard
+## 15. Running Experiments, Pipelines & Dashboard
 
-### Retraining & Evaluating Models (Phases 5 & 6)
-All processed features are already committed in `data/processed/`. You can re-execute model training and hypothesis evaluation at any time:
-```bash
-# Train M1-M4 models across all cutoffs and compute metrics
+### Modular Multi-Algorithm Benchmark (LR, RF, RBF-SVM, HistGBM)
+Compare 4 machine learning algorithm families across M1–M4 configurations and cutoffs (40, 70, 100 cycles) using strict 5-fold training CV:
+```powershell
+python src/models/multi_algorithm_benchmark.py
+```
+
+### Multi-Seed Randomized Peer Controls & PMRI Validation
+Execute 20-seed empirical null distribution permutations and PMRI error correlation:
+```powershell
+python src/peers/peer_control_experiments.py
+```
+
+### Selective Prediction Risk-Coverage Trade-Off Evaluation
+Evaluate held-out test discrimination under training-only selective prediction abstention:
+```powershell
+python src/models/selective_prediction.py
+```
+
+### Executing M5 Counterfactual Robustness & Ablations
+Run M5 counterfactual perturbation traces and ablation studies:
+```powershell
+python src/models/evaluate_m5.py
+```
+
+### Retraining Baseline Models & Running Hypotheses (Phases 5 & 6)
+```powershell
+# Train baseline M1-M4 models across cutoffs
 python src/models/train_models.py
 
 # Run hypothesis testing, bootstrap confidence intervals, and generate figures
 python src/evaluation/hypothesis_evaluator.py
 ```
 
-### Launching the Interactive Screening Dashboard
-Start the lightweight Python server:
-```bash
+### Launching the "BATTERY INTELLIGENCE" Dashboard
+Start the lightweight standard library Python data server:
+```powershell
 python dashboard/server.py
 ```
-*(To run on a custom port, pass the port argument: `python dashboard/server.py 8080`)*
+*(Optional: specify a custom port: `python dashboard/server.py 8080`)*
 
-Open your browser and navigate to:
+Open your web browser and navigate to:
 ```text
 http://127.0.0.1:8000/
 ```

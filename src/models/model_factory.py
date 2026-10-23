@@ -11,10 +11,11 @@ import logging
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 
 logger = logging.getLogger(__name__)
 
@@ -188,3 +189,100 @@ class ModelFactory:
                 ),
             ),
         ])
+
+    @staticmethod
+    def build_rbf_svm(
+        C: float = 1.0,
+        gamma: str = "scale",
+        class_weight: Optional[str] = "balanced",
+        random_state: int = 42,
+    ) -> Pipeline:
+        """Constructs a standardized RBF Support Vector Machine pipeline with Platt probability calibration."""
+        return Pipeline([
+            ("scaler", StandardScaler()),
+            (
+                "classifier",
+                SVC(
+                    C=float(C),
+                    kernel="rbf",
+                    gamma=gamma,
+                    probability=True,
+                    class_weight=class_weight,
+                    random_state=int(random_state),
+                ),
+            ),
+        ])
+
+    @staticmethod
+    def build_hist_gradient_boosting(
+        max_iter: int = 100,
+        max_depth: Optional[int] = 3,
+        learning_rate: float = 0.05,
+        class_weight: Optional[str] = "balanced",
+        random_state: int = 42,
+    ) -> Pipeline:
+        """Constructs a standardized Histogram Gradient Boosting Classifier pipeline."""
+        return Pipeline([
+            ("scaler", StandardScaler()),
+            (
+                "classifier",
+                HistGradientBoostingClassifier(
+                    max_iter=int(max_iter),
+                    max_depth=max_depth,
+                    learning_rate=float(learning_rate),
+                    class_weight=class_weight,
+                    random_state=int(random_state),
+                ),
+            ),
+        ])
+
+    @classmethod
+    def build_pipeline(
+        cls,
+        algorithm: str = "logistic_regression",
+        random_state: int = 42,
+        **kwargs,
+    ) -> Pipeline:
+        """Shared modular interface creating an ML pipeline for any supported algorithm."""
+        algo = algorithm.lower().replace("-", "_").replace(" ", "_")
+        if algo in ("logistic_regression", "lr"):
+            return cls.build_logistic_regression(random_state=random_state, **kwargs)
+        elif algo in ("random_forest", "rf"):
+            return cls.build_random_forest(random_state=random_state, **kwargs)
+        elif algo in ("rbf_svm", "svm", "svc"):
+            return cls.build_rbf_svm(random_state=random_state, **kwargs)
+        elif algo in ("hist_gradient_boosting", "gradient_boosting", "hgb", "gbm"):
+            return cls.build_hist_gradient_boosting(random_state=random_state, **kwargs)
+        else:
+            raise ValueError(
+                f"Unsupported algorithm '{algorithm}'. Supported: "
+                "['logistic_regression', 'random_forest', 'rbf_svm', 'hist_gradient_boosting']"
+            )
+
+
+SUPPORTED_ALGORITHMS: Dict[str, Dict[str, Any]] = {
+    "logistic_regression": {
+        "name": "Standardized Logistic Regression",
+        "family": "Linear",
+        "description": "Baseline linear classifier with L2 regularization and Platt probability calibration.",
+        "params": {"C": 1.0, "solver": "lbfgs", "class_weight": "balanced"},
+    },
+    "random_forest": {
+        "name": "Random Forest Ensemble",
+        "family": "Tree Ensemble",
+        "description": "Nonlinear bagging ensemble with 100 shallow decision trees.",
+        "params": {"n_estimators": 100, "max_depth": 5, "min_samples_split": 4, "class_weight": "balanced"},
+    },
+    "rbf_svm": {
+        "name": "RBF Support Vector Machine",
+        "family": "Kernel Method",
+        "description": "Radial basis function kernel SVM with training-only Platt scaling.",
+        "params": {"C": 1.0, "kernel": "rbf", "gamma": "scale", "class_weight": "balanced"},
+    },
+    "hist_gradient_boosting": {
+        "name": "Histogram Gradient Boosting",
+        "family": "Boosting",
+        "description": "Lightweight gradient boosted decision trees with histogram binning.",
+        "params": {"max_iter": 100, "max_depth": 3, "learning_rate": 0.05, "class_weight": "balanced"},
+    },
+}

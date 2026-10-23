@@ -55,12 +55,18 @@ MODEL_METADATA = {
         "groups": ["Initial Condition", "Snapshot", "Trajectory", "Differential Curves", "Peer Trajectory", "Peer-Match Reliability PMRI (4)"],
         "desc": "Full proposed model incorporating peer-relative trajectory deviations and peer-match reliability metrics.",
     },
+    "M5": {
+        "name": "Adaptive Peer-Trust & Counterfactual Engine",
+        "feature_count": 46,
+        "groups": ["Initial Condition", "Snapshot", "Trajectory", "Differential Curves", "Peer Trajectory", "PMRI (4)", "Counterfactual Robustness (U)", "Adaptive Blending (T)"],
+        "desc": "Adaptive confidence-aware engine combining PMRI with counterfactual peer instability (U) to dynamically weight peer-relative and historical models.",
+    },
 }
 
 MODEL_THRESHOLDS = {
-    40: {"M1": 0.5691, "M2": 0.7284, "M3": 0.5486, "M4": 0.5267},
-    70: {"M1": 0.6656, "M2": 0.5957, "M3": 0.6423, "M4": 0.6066},
-    100: {"M1": 0.6079, "M2": 0.5305, "M3": 0.5950, "M4": 0.5790},
+    40: {"M1": 0.5691, "M2": 0.7284, "M3": 0.5486, "M4": 0.5267, "M5": 0.7477},
+    70: {"M1": 0.6656, "M2": 0.5957, "M3": 0.6423, "M4": 0.6066, "M5": 0.6359},
+    100: {"M1": 0.6079, "M2": 0.5305, "M3": 0.5950, "M4": 0.5790, "M5": 0.5681},
 }
 
 FEATURE_METADATA = {
@@ -289,6 +295,10 @@ class BatteryDataManager:
         self.research_summary: Dict[str, Any] = {}
         self.research_differences: List[Dict[str, Any]] = []
         self.research_robustness: List[Dict[str, Any]] = []
+        self.multi_algorithm_metrics: List[Dict[str, Any]] = []
+        self.peer_randomization_control: List[Dict[str, Any]] = []
+        self.pmri_reliability_analysis: Dict[str, Any] = {}
+        self.selective_prediction_curve: List[Dict[str, Any]] = []
         self.load_all_data()
 
     def load_all_data(self):
@@ -480,6 +490,131 @@ class BatteryDataManager:
                     self.research_robustness.append(typed)
             logger.info("Loaded %d Phase 6 robustness evaluations.", len(self.research_robustness))
 
+        # 8. Load M5 predictions, counterfactual robustness perturbations, and ablations
+        self.m5_predictions: Dict[str, Dict[int, Dict[str, Any]]] = {}
+        self.m5_perturbations: Dict[Tuple[str, int], List[Dict[str, Any]]] = {}
+        self.m5_ablations: List[Dict[str, Any]] = []
+        self.m5_summary: Dict[str, Any] = {}
+
+        m5_preds_csv = RESULTS_DIR / "m5_predictions.csv"
+        if m5_preds_csv.exists():
+            with open(m5_preds_csv, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    cid = row["cell_id"]
+                    cutoff = int(row["cutoff"])
+                    if cid not in self.m5_predictions:
+                        self.m5_predictions[cid] = {}
+                    typed = {}
+                    for k, v in row.items():
+                        try:
+                            typed[k] = float(v) if v not in ("", "nan", "None", None) else None
+                        except ValueError:
+                            typed[k] = v
+                    self.m5_predictions[cid][cutoff] = typed
+                    if cid in self.model_predictions and cutoff in self.model_predictions[cid]:
+                        self.model_predictions[cid][cutoff]["prob_M5"] = typed.get("prob_M5")
+                        self.model_predictions[cid][cutoff]["instability_U"] = typed.get("instability_U")
+                        self.model_predictions[cid][cutoff]["trust_score_T"] = typed.get("trust_score_T")
+                        self.model_predictions[cid][cutoff]["abstained_M5"] = typed.get("abstained_M5")
+                        self.model_predictions[cid][cutoff]["abstention_reason_M5"] = typed.get("abstention_reason_M5")
+            logger.info("Loaded M5 predictions for %d cells across cutoffs.", len(self.m5_predictions))
+
+        m5_rob_csv = RESULTS_DIR / "m5_peer_robustness.csv"
+        if m5_rob_csv.exists():
+            with open(m5_rob_csv, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    cid = row["cell_id"]
+                    cutoff = int(row["cutoff"])
+                    key = (cid, cutoff)
+                    if key not in self.m5_perturbations:
+                        self.m5_perturbations[key] = []
+                    typed = {}
+                    for k, v in row.items():
+                        if k in ("prediction_flip", "is_valid"):
+                            typed[k] = str(v).lower() in ("true", "1")
+                        elif k in ("predicted_prob", "prob_delta"):
+                            try:
+                                typed[k] = float(v) if v not in ("", "nan", "None", None) else None
+                            except ValueError:
+                                typed[k] = v
+                        else:
+                            typed[k] = v
+                    self.m5_perturbations[key].append(typed)
+            logger.info("Loaded %d M5 counterfactual perturbation traces.", sum(len(v) for v in self.m5_perturbations.values()))
+
+        m5_abl_csv = RESULTS_DIR / "m5_ablation_results.csv"
+        if m5_abl_csv.exists():
+            with open(m5_abl_csv, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    typed = {}
+                    for k, v in row.items():
+                        try:
+                            typed[k] = float(v) if v not in ("", "nan", "None", None) else None
+                        except ValueError:
+                            typed[k] = v
+                    self.m5_ablations.append(typed)
+            logger.info("Loaded %d M5 ablation records.", len(self.m5_ablations))
+
+        m5_eval_json = RESULTS_DIR / "m5_evaluation.json"
+        if m5_eval_json.exists():
+            with open(m5_eval_json, mode="r", encoding="utf-8") as f:
+                self.m5_summary = json.load(f)
+            logger.info("Loaded M5 evaluation JSON summary.")
+
+        # 9. Load multi-algorithm benchmark metrics
+        multi_algo_csv = RESULTS_DIR / "multi_algorithm_metrics.csv"
+        if multi_algo_csv.exists():
+            with open(multi_algo_csv, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    typed = {}
+                    for k, v in row.items():
+                        try:
+                            typed[k] = float(v) if v not in ("", "nan", "None", None) else None
+                        except ValueError:
+                            typed[k] = v
+                    self.multi_algorithm_metrics.append(typed)
+            logger.info("Loaded %d multi-algorithm metric records.", len(self.multi_algorithm_metrics))
+
+        # 10. Load multi-seed peer control and PMRI validation
+        peer_ctrl_csv = RESULTS_DIR / "peer_randomization_control.csv"
+        if peer_ctrl_csv.exists():
+            with open(peer_ctrl_csv, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    typed = {}
+                    for k, v in row.items():
+                        try:
+                            typed[k] = float(v) if v not in ("", "nan", "None", None) else None
+                        except ValueError:
+                            typed[k] = v
+                    self.peer_randomization_control.append(typed)
+            logger.info("Loaded %d peer control permutation records.", len(self.peer_randomization_control))
+
+        pmri_json = RESULTS_DIR / "pmri_reliability_analysis.json"
+        if pmri_json.exists():
+            with open(pmri_json, mode="r", encoding="utf-8") as f:
+                self.pmri_reliability_analysis = json.load(f)
+            logger.info("Loaded PMRI reliability analysis JSON.")
+
+        # 11. Load selective prediction trade-off curves
+        sel_pred_csv = RESULTS_DIR / "selective_prediction_curve.csv"
+        if sel_pred_csv.exists():
+            with open(sel_pred_csv, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    typed = {}
+                    for k, v in row.items():
+                        try:
+                            typed[k] = float(v) if v not in ("", "nan", "None", None) else None
+                        except ValueError:
+                            typed[k] = v
+                    self.selective_prediction_curve.append(typed)
+            logger.info("Loaded %d selective prediction curve points.", len(self.selective_prediction_curve))
+
     def get_overview(self) -> Dict[str, Any]:
         """Returns high-level statistics about the dataset, partitions, models, and predictions."""
         total_cells = len(self.cells_meta)
@@ -499,7 +634,7 @@ class BatteryDataManager:
         # Calculate elevated risk counts per cutoff and model
         elevated_risk_counts: Dict[int, Dict[str, int]] = {40: {}, 70: {}, 100: {}}
         for cutoff in (40, 70, 100):
-            for model_key in ("M1", "M2", "M3", "M4"):
+            for model_key in ("M1", "M2", "M3", "M4", "M5"):
                 th = MODEL_THRESHOLDS[cutoff][model_key]
                 count = 0
                 for cell_dict in self.model_predictions.values():
@@ -522,8 +657,9 @@ class BatteryDataManager:
             "total_cycle_records": sum(len(c) for c in self.cycle_summaries.values()),
             "nominal_capacity_ah": 1.1,
             "eol_threshold_ah": 0.88,
-            "total_models": 4,
-            "models": ["M1", "M2", "M3", "M4"],
+            "total_models": 5,
+            "total_baseline_models": 4,
+            "models": ["M1", "M2", "M3", "M4", "M5"],
             "model_metadata": MODEL_METADATA,
             "model_thresholds": MODEL_THRESHOLDS,
             "total_predictions": total_predictions,
@@ -736,7 +872,7 @@ class BatteryDataManager:
         cutoff_th = MODEL_THRESHOLDS.get(cutoff, {})
 
         model_details = {}
-        for m in ("M1", "M2", "M3", "M4"):
+        for m in ("M1", "M2", "M3", "M4", "M5"):
             p_val = raw_pred.get(f"prob_{m}")
             th_val = cutoff_th.get(m, 0.50)
             is_elevated = (p_val >= th_val) if (p_val is not None) else None
@@ -749,6 +885,10 @@ class BatteryDataManager:
                 "feature_count": MODEL_METADATA[m]["feature_count"],
                 "groups": MODEL_METADATA[m]["groups"],
                 "description": MODEL_METADATA[m]["desc"],
+                "abstained": raw_pred.get("abstained_M5") if m == "M5" else False,
+                "abstention_reason": raw_pred.get("abstention_reason_M5") if m == "M5" else None,
+                "trust_score": raw_pred.get("trust_score_T") if m == "M5" else None,
+                "instability_U": raw_pred.get("instability_U") if m == "M5" else None,
             }
 
         enriched["model_details"] = model_details
@@ -886,6 +1026,264 @@ class BatteryDataManager:
             ),
         }
 
+    def get_m5_robustness_for_cell(self, cell_id: str, cutoff: int = 100) -> Optional[Dict[str, Any]]:
+        """Retrieves counterfactual perturbation traces and sensitivity metrics for a battery cell."""
+        if cell_id not in self.m5_predictions:
+            return None
+        m5_row = self.m5_predictions[cell_id].get(cutoff)
+        if not m5_row:
+            return None
+
+        key = (cell_id, cutoff)
+        perturbations = self.m5_perturbations.get(key, [])
+
+        u_val = m5_row.get("instability_U", 0.0)
+        t_val = m5_row.get("trust_score_T", 0.0)
+        p_peer = m5_row.get("prob_M3")
+        p_hist = m5_row.get("prob_M2")
+        p_m5 = m5_row.get("prob_M5")
+        flip_rate = m5_row.get("flip_rate", 0.0)
+        abstained = bool(m5_row.get("abstained_M5", False))
+        reason = m5_row.get("abstention_reason_M5", "NOMINAL_TRUST")
+
+        if abstained:
+            explanation = (
+                f"Abstention triggered: {reason}. Automated risk prediction is flagged as low confidence "
+                f"due to reference cohort sparsity or elevated counterfactual perturbation variance."
+            )
+        elif u_val is not None and u_val > 0.05:
+            explanation = (
+                f"The peer-based estimate changes under alternative reference selections (U = {u_val:.4f}, flip rate = {flip_rate*100:.1f}%). "
+                f"The system has automatically adapted its peer-trust score (T = {t_val:.3f}) and blended with historical degradation evidence."
+            )
+        else:
+            explanation = (
+                f"The peer-based estimate remains stable across counterfactual reference perturbations (U = {u_val:.4f}). "
+                f"High adaptive trust (T = {t_val:.3f}) was placed on the peer-relative degradation trajectory."
+            )
+
+        # Build sensitivity ranking from LOO perturbations
+        sensitivity_ranking = []
+        for p in perturbations:
+            if p.get("perturbation_type") == "LEAVE_ONE_OUT":
+                peer = p.get("excluded_peer")
+                delta = float(p.get("prob_delta", 0.0))
+                sensitivity_ranking.append({
+                    "peer_id": peer,
+                    "prob_delta": delta,
+                    "abs_delta": abs(delta),
+                    "predicted_prob": float(p.get("predicted_prob", 0.0)),
+                })
+        sensitivity_ranking.sort(key=lambda x: x["abs_delta"], reverse=True)
+
+        return {
+            "cell_id": cell_id,
+            "cutoff": cutoff,
+            "prob_peer": p_peer,
+            "prob_history": p_hist,
+            "prob_m5": p_m5,
+            "threshold": m5_row.get("threshold_M5", MODEL_THRESHOLDS[cutoff]["M5"]),
+            "is_elevated_risk": m5_row.get("is_elevated_risk_M5"),
+            "risk_category": m5_row.get("risk_category_M5"),
+            "pmri": m5_row.get("pmri"),
+            "instability_u": u_val,
+            "instability_U": u_val,
+            "counterfactual_mean": m5_row.get("counterfactual_mean"),
+            "counterfactual_range": m5_row.get("counterfactual_range"),
+            "flip_rate": flip_rate,
+            "most_influential_peer": m5_row.get("most_influential_peer"),
+            "max_peer_delta": m5_row.get("max_peer_delta"),
+            "trust_score": t_val,
+            "lambda_param": m5_row.get("lambda_param"),
+            "instability_penalty": m5_row.get("instability_penalty"),
+            "abstained": abstained,
+            "abstention_reason": reason,
+            "explanation": explanation,
+            "perturbations": perturbations,
+            "sensitivity_ranking": sensitivity_ranking,
+        }
+
+    def get_m5_ablations(self) -> List[Dict[str, Any]]:
+        """Retrieves Phase 7 M5 ablation results."""
+        return self.m5_ablations
+
+    def validate_hardware_csv(self, csv_content: str) -> Dict[str, Any]:
+        """Validates uploaded external laboratory test stream CSV against documented hardware schema.
+        Supports both cycle-summary schema (Cycle_Index, Discharge_Capacity_Ah, ...)
+        and high-frequency telemetry schema (cell_id, cycle, voltage, current, ...).
+        Never claims physical experiments occurred; strictly performs technical schema and bounds audit."""
+        import io
+        lines = [line.strip() for line in csv_content.strip().splitlines() if line.strip()]
+        if not lines:
+            return {"valid": False, "is_valid": False, "status": "EMPTY_FILE", "message": "Uploaded CSV file is empty.", "cycle_count": 0, "errors": ["Uploaded file is empty."]}
+
+        f = io.StringIO("\n".join(lines))
+        reader = csv.DictReader(f)
+        headers = [h.strip().lower() for h in (reader.fieldnames or [])]
+
+        # Schema 1: Cycle Summary Schema
+        summary_aliases = {
+            "cycle": ["cycle_index", "cycle", "cycle_number"],
+            "capacity": ["discharge_capacity_ah", "discharge_capacity", "q_discharge", "capacity_ah"],
+            "resistance": ["internal_resistance_ohm", "internal_resistance", "ir", "ir_ohm"],
+            "temperature": ["temperature_max_c", "tmax", "max_temp", "temperature", "temp_c"],
+            "charge_time": ["charge_time_min", "chargetime", "charge_time", "t_charge"],
+        }
+        summary_matched = {}
+        for canonical, aliases in summary_aliases.items():
+            for alias in aliases:
+                if alias in headers:
+                    summary_matched[canonical] = alias
+                    break
+
+        # Schema 2: Raw Telemetry Schema
+        telemetry_aliases = {
+            "cell_id": ["cell_id", "battery_id", "cell", "id"],
+            "cycle": ["cycle", "cycle_number", "cycle_index", "step"],
+            "voltage": ["voltage", "v", "voltage_v", "cell_voltage"],
+            "current": ["current", "i", "current_a", "current_amps"],
+            "temperature": ["temperature", "temp", "temp_c", "t_surface"],
+        }
+        telemetry_matched = {}
+        for canonical, aliases in telemetry_aliases.items():
+            for alias in aliases:
+                if alias in headers:
+                    telemetry_matched[canonical] = alias
+                    break
+
+        is_summary_schema = len(summary_matched) >= 4
+        is_telemetry_schema = len(telemetry_matched) >= 4
+
+        if not is_summary_schema and not is_telemetry_schema:
+            return {
+                "valid": False,
+                "is_valid": False,
+                "status": "SCHEMA_MISMATCH",
+                "message": f"CSV headers do not match supported hardware cycler schemas (Cycle Summary or Raw Telemetry). Detected headers: {headers}",
+                "cycle_count": 0,
+                "errors": [f"Missing required columns. Found: {', '.join(headers)}"],
+                "sample_rows": [],
+            }
+
+        rows_parsed = 0
+        anomalies = []
+        sample_rows = []
+        last_cycle = -1
+
+        for row_idx, row in enumerate(reader):
+            rows_parsed += 1
+            row_lower = {k.strip().lower(): v for k, v in row.items() if k}
+            if is_summary_schema:
+                try:
+                    cyc = float(row_lower.get(summary_matched.get("cycle", "cycle"), 0))
+                    cap = float(row_lower.get(summary_matched.get("capacity", "capacity"), 0))
+                    ir = float(row_lower.get(summary_matched.get("resistance", "resistance"), 0)) if "resistance" in summary_matched else 0.015
+                    tmax = float(row_lower.get(summary_matched.get("temperature", "temperature"), 25.0))
+                    tc = float(row_lower.get(summary_matched.get("charge_time", "charge_time"), 45.0)) if "charge_time" in summary_matched else 45.0
+                except (ValueError, TypeError) as ve:
+                    anomalies.append(f"Row {row_idx+1}: Non-numeric value ({ve})")
+                    continue
+
+                if cyc <= last_cycle:
+                    anomalies.append(f"Row {row_idx+1}: Cycle index {cyc} is not strictly monotonically increasing (previous: {last_cycle})")
+                last_cycle = cyc
+
+                if not (0.3 <= cap <= 2.5):
+                    anomalies.append(f"Row {row_idx+1}: Discharge capacity {cap:.3f} Ah outside physical bounds [0.3 Ah, 2.5 Ah]")
+                if ir <= 0 or ir > 0.5:
+                    anomalies.append(f"Row {row_idx+1}: Internal resistance {ir:.4f} Ohm outside expected range (0, 0.5 Ohm]")
+                if not (5.0 <= tmax <= 80.0):
+                    anomalies.append(f"Row {row_idx+1}: Max temperature {tmax:.1f} deg C outside operating limits [5 deg C, 80 deg C]")
+
+                if rows_parsed <= 10:
+                    sample_rows.append({
+                        "cycle": cyc,
+                        "capacity_ah": cap,
+                        "ir_ohm": ir,
+                        "temperature_c": tmax,
+                        "charge_time_min": tc,
+                    })
+
+            else:  # Telemetry schema
+                cid = str(row_lower.get(telemetry_matched.get("cell_id", "cell_id"), f"row_{row_idx}"))
+                try:
+                    cyc = float(row_lower.get(telemetry_matched.get("cycle", "cycle"), 0))
+                    v_val = float(row_lower.get(telemetry_matched.get("voltage", "voltage"), 0))
+                    i_val = float(row_lower.get(telemetry_matched.get("current", "current"), 0))
+                    t_val = float(row_lower.get(telemetry_matched.get("temperature", "temperature"), 0))
+                except (ValueError, TypeError) as ve:
+                    anomalies.append(f"Row {row_idx+1}: Non-numeric telemetry measurement ({ve})")
+                    continue
+
+                if not (1.8 <= v_val <= 4.3):
+                    anomalies.append(f"Row {row_idx+1}: Voltage {v_val:.3f}V outside normal LFP/NMC bounds [1.8V, 4.3V]")
+                if not (-50.0 <= i_val <= 50.0):
+                    anomalies.append(f"Row {row_idx+1}: Current {i_val:.2f}A exceeds typical cycler bounds [-50A, +50A]")
+                if not (-10.0 <= t_val <= 90.0):
+                    anomalies.append(f"Row {row_idx+1}: Temperature {t_val:.1f} deg C outside safe operating chamber limits [-10 deg C, 90 deg C]")
+
+                if rows_parsed <= 10:
+                    sample_rows.append({
+                        "cell_id": cid,
+                        "cycle": cyc,
+                        "voltage": v_val,
+                        "current": i_val,
+                        "temperature": t_val,
+                    })
+
+        is_valid = len(anomalies) == 0 and rows_parsed >= 5
+        schema_type = "Cycle Summary Schema" if is_summary_schema else "Raw Telemetry Schema"
+        return {
+            "valid": is_valid,
+            "is_valid": is_valid,
+            "status": "VALIDATED_FOR_INGESTION" if is_valid else "REJECTED_ERRORS_DETECTED",
+            "schema_detected": schema_type,
+            "cycle_count": rows_parsed,
+            "rows_parsed": rows_parsed,
+            "message": f"Successfully verified {rows_parsed} rows under {schema_type} with 0 anomalies." if is_valid else f"Validation failed: {len(anomalies)} anomalies detected across {rows_parsed} rows.",
+            "errors": anomalies,
+            "anomalies": anomalies,
+            "total_rows": rows_parsed,
+            "anomaly_count": len(anomalies),
+            "disclaimer": "Laboratory hardware data validation interface. Prepared for experimental cycler ingestion without physical claims.",
+        }
+
+    def get_benchmark_export(self, format_type: str = "json") -> Tuple[str, str]:
+        """Exports benchmark metrics and predictions as JSON or CSV."""
+        if format_type.lower() == "csv":
+            m5_csv_path = RESULTS_DIR / "m5_predictions.csv"
+            if m5_csv_path.exists():
+                return m5_csv_path.read_text(encoding="utf-8"), "text/csv"
+            return "cell_id,cutoff,prob_M5\n", "text/csv"
+        else:
+            predictions_list = []
+            m5_csv_path = RESULTS_DIR / "m5_predictions.csv"
+            if m5_csv_path.exists():
+                with open(m5_csv_path, "r", encoding="utf-8") as f:
+                    predictions_list = list(csv.DictReader(f))
+            data = {
+                "m5_summary": self.m5_summary,
+                "overview": self.get_overview(),
+                "ablations": self.m5_ablations,
+                "predictions": predictions_list,
+            }
+            return json.dumps(data, indent=2), "application/json"
+
+    def get_multi_algorithm_metrics(self) -> List[Dict[str, Any]]:
+        """Returns benchmark metrics for all evaluated ML algorithms."""
+        return self.multi_algorithm_metrics
+
+    def get_peer_control_results(self) -> Dict[str, Any]:
+        """Returns multi-seed negative peer control permutations and PMRI correlation analysis."""
+        return {
+            "permutations": self.peer_randomization_control,
+            "pmri_analysis": self.pmri_reliability_analysis,
+        }
+
+    def get_selective_prediction_results(self) -> List[Dict[str, Any]]:
+        """Returns selective prediction risk-coverage trade-off curve points."""
+        return self.selective_prediction_curve
+
 
 # Global data manager singleton
 DATA_MANAGER = BatteryDataManager()
@@ -1001,7 +1399,7 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
             elif path == "/api/models/predict":
                 cid = query.get("id", [""])[0]
                 cutoff_str = query.get("cutoff", ["100"])[0]
-                model_name = query.get("model", ["M4"])[0].upper()
+                model_name = query.get("model", ["M5"])[0].upper()
                 cutoff = int(cutoff_str) if cutoff_str.isdigit() else 100
 
                 if cid not in DATA_MANAGER.cells_meta:
@@ -1010,8 +1408,8 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                 if cutoff not in (40, 70, 100):
                     self.send_error_response(400, f"Unsupported observation cutoff: {cutoff}. Allowed: 40, 70, 100.")
                     return
-                if model_name not in ("M1", "M2", "M3", "M4"):
-                    self.send_error_response(400, f"Unsupported model '{model_name}'. Allowed: M1, M2, M3, M4.")
+                if model_name not in ("M1", "M2", "M3", "M4", "M5"):
+                    self.send_error_response(400, f"Unsupported model '{model_name}'. Allowed: M1, M2, M3, M4, M5.")
                     return
 
                 cell_preds = DATA_MANAGER.get_model_predictions_for_cell(cid, cutoff)
@@ -1038,7 +1436,39 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                     "validation_status": cell_preds.get("validation_status"),
                     "source": "SAVED_VALIDATED_PREDICTION",
                 }
+                if model_name == "M5":
+                    res["trust_score"] = details.get("trust_score")
+                    res["instability_U"] = details.get("instability_U")
+                    res["abstained"] = details.get("abstained")
+                    res["abstention_reason"] = details.get("abstention_reason")
                 self.send_json_response(res)
+
+            elif path == "/api/m5/robustness":
+                cid = query.get("id", [""])[0]
+                cutoff_str = query.get("cutoff", ["100"])[0]
+                cutoff = int(cutoff_str) if cutoff_str.isdigit() else 100
+                data = DATA_MANAGER.get_m5_robustness_for_cell(cid, cutoff)
+                if data is None:
+                    self.send_error_response(404, f"M5 robustness data for '{cid}' at cutoff {cutoff} not found.")
+                else:
+                    self.send_json_response(data)
+
+            elif path == "/api/m5/ablations":
+                self.send_json_response(DATA_MANAGER.get_m5_ablations())
+
+            elif path == "/api/m5/summary":
+                self.send_json_response(DATA_MANAGER.m5_summary)
+
+            elif path == "/api/export/benchmark":
+                fmt = query.get("format", ["json"])[0]
+                content, mime = DATA_MANAGER.get_benchmark_export(fmt)
+                self.send_response(200)
+                self.send_header("Content-Type", mime)
+                self.send_header("Content-Disposition", f"attachment; filename=benchmark_export.{fmt}")
+                self.send_header("Content-Length", str(len(content.encode("utf-8"))))
+                self.end_headers()
+                self.wfile.write(content.encode("utf-8"))
+                return
 
             elif path == "/api/research/summary":
                 self.send_json_response(DATA_MANAGER.research_summary)
@@ -1049,12 +1479,47 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
             elif path == "/api/research/robustness":
                 self.send_json_response(DATA_MANAGER.research_robustness)
 
+            elif path == "/api/research/algorithms":
+                self.send_json_response(DATA_MANAGER.get_multi_algorithm_metrics())
+
+            elif path == "/api/research/peer-controls":
+                self.send_json_response(DATA_MANAGER.get_peer_control_results())
+
+            elif path == "/api/research/selective-prediction":
+                self.send_json_response(DATA_MANAGER.get_selective_prediction_results())
+
             else:
                 self.send_error_response(404, f"API route '{path}' not found.")
 
         except Exception as err:
             logger.exception("Error handling API request: %s", err)
             self.send_error_response(500, f"Internal server error: {err}")
+
+    def do_POST(self):
+        """Routes POST requests for hardware CSV validation."""
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+
+        if path == "/api/hardware/validate":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                post_body = self.rfile.read(content_length).decode("utf-8")
+
+                csv_text = post_body
+                if post_body.strip().startswith("{"):
+                    try:
+                        payload = json.loads(post_body)
+                        csv_text = payload.get("csv_content", post_body)
+                    except Exception:
+                        csv_text = post_body
+
+                res = DATA_MANAGER.validate_hardware_csv(csv_text)
+                self.send_json_response(res)
+            except Exception as err:
+                logger.exception("Error in hardware validation POST handler: %s", err)
+                self.send_error_response(500, f"Hardware validation error: {err}")
+        else:
+            self.send_error_response(404, f"POST route '{path}' not found.")
 
     def send_json_response(self, data: Any, status: int = 200):
         """Serializes and sends a JSON payload."""

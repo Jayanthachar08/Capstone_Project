@@ -1,26 +1,35 @@
 /**
- * Battery Degradation Screening Dashboard Client Application
- * Phase 7: Validated ML Models, Peer-Relative Trajectory Overlay, PMRI, and Research Integration.
+ * BATTERY INTELLIGENCE — Dashboard Client Application
+ * Phase 7: Validated ML Models (M1–M5), Adaptive Counterfactual Trust,
+ * Peer-Relative Trajectory Overlays, PMRI, Research Benchmarks, and Hardware Validation.
  */
 
 // Application State
 const state = {
   currentBatteryId: "b1c0",
   currentCutoff: 100, // 40, 70, 100, or 'all'
-  currentModel: "M4", // 'M1', 'M2', 'M3', 'M4'
+  currentModel: "M5", // 'M1', 'M2', 'M3', 'M4', 'M5'
+  currentView: "overview",
   currentMetric: "QDischarge", // 'QDischarge', 'IR', 'Tmax', 'Tavg', 'chargetime'
   currentFeatureGroup: "Initial Condition",
   comparisonCells: ["b1c0", "b1c1"],
   comparisonMetric: "QDischarge",
   batteriesList: [],
   currentBatteryData: null,
+  currentM5Data: null,
   overviewData: null,
   researchSummary: null,
   researchMetrics: null,
   researchDifferences: null,
+  multiAlgoMetrics: null,
+  peerControlsData: null,
+  selectivePredictionData: null,
+  m5Ablations: null,
+  m5Summary: null,
   trajectoryChart: null,
   comparisonChart: null,
   peerTrajectoryChart: null,
+  sensitivityChart: null,
 };
 
 // Color Palette for Multi-cell Overlays
@@ -62,9 +71,12 @@ async function initDashboard() {
       document.getElementById("stat-eligible-cells").textContent = state.overviewData.eligible_cells;
       document.getElementById("stat-excluded-cells").textContent = state.overviewData.excluded_cells;
       const mCountEl = document.getElementById("stat-models-count");
-      if (mCountEl) mCountEl.textContent = state.overviewData.total_models || 4;
+      if (mCountEl) mCountEl.textContent = state.overviewData.total_models || 5;
       const pCountEl = document.getElementById("stat-predictions-count");
       if (pCountEl) pCountEl.textContent = state.overviewData.total_predictions || 372;
+
+      // Update overview risk breakdown cards
+      updateOverviewRiskBreakdown();
     }
 
     // 2. Fetch all batteries list
@@ -78,9 +90,12 @@ async function initDashboard() {
 
     // 4. Attach event listeners
     setupEventListeners();
+    setupNavigation();
+    setupHardwareValidation();
 
     // 5. Load research section data asynchronously
     loadAndRenderResearchSection();
+    loadAndRenderM5Ablations();
 
     // 6. Load initial default battery
     await loadBattery(state.currentBatteryId);
@@ -88,9 +103,76 @@ async function initDashboard() {
 
   } catch (err) {
     console.error("Dashboard initialization error:", err);
-    alert("Could not load dashboard data. Ensure dashboard/server.py is running.");
   }
 }
+
+/**
+ * Sets up sidebar navigation and view panel switching.
+ */
+function setupNavigation() {
+  const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
+  navItems.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetView = btn.dataset.view;
+      if (targetView) {
+        switchView(targetView);
+      }
+    });
+  });
+
+  // Mobile sidebar toggle
+  const toggleBtn = document.getElementById("sidebar-toggle");
+  const sidebar = document.getElementById("app-sidebar");
+  if (toggleBtn && sidebar) {
+    toggleBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+    });
+  }
+}
+
+/**
+ * Switches the active dashboard view.
+ */
+window.switchView = function (viewName) {
+  state.currentView = viewName;
+
+  // Update nav item active states
+  const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
+  navItems.forEach((item) => {
+    if (item.dataset.view === viewName) {
+      item.classList.add("active");
+    } else {
+      item.classList.remove("active");
+    }
+  });
+
+  // Update view panel visibility
+  const panels = document.querySelectorAll(".view-panel");
+  panels.forEach((p) => {
+    p.classList.remove("active");
+  });
+  const activePanel = document.getElementById(`view-${viewName}`);
+  if (activePanel) {
+    activePanel.classList.add("active");
+  }
+
+  // Close mobile sidebar if open
+  const sidebar = document.getElementById("app-sidebar");
+  if (sidebar && sidebar.classList.contains("open")) {
+    sidebar.classList.remove("open");
+  }
+
+  // Trigger chart resizes for hidden canvases
+  setTimeout(() => {
+    if (state.trajectoryChart) state.trajectoryChart.resize();
+    if (state.comparisonChart) state.comparisonChart.resize();
+    if (state.peerTrajectoryChart) state.peerTrajectoryChart.resize();
+    if (state.sensitivityChart) state.sensitivityChart.resize();
+  }, 50);
+
+  // Scroll to top of workspace
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
 
 /**
  * Populates the primary battery selector dropdown.
@@ -135,6 +217,7 @@ function populateBatteryDropdown() {
  */
 function populateCompareDropdown() {
   const select = document.getElementById("compare-cell-select");
+  if (!select) return;
   select.innerHTML = '<option value="">+ Add cell to comparison...</option>';
 
   state.batteriesList.forEach((cell) => {
@@ -168,6 +251,8 @@ function setupEventListeners() {
       btn.classList.add("active");
       const val = btn.dataset.cutoff;
       state.currentCutoff = val === "all" ? "all" : parseInt(val, 10);
+      const maskEl = document.getElementById("mask-cutoff-label");
+      if (maskEl) maskEl.textContent = val;
       loadBattery(state.currentBatteryId);
       updateComparisonChart();
     });
@@ -210,223 +295,262 @@ function setupEventListeners() {
   });
 
   // Add Cell to Comparison
-  document.getElementById("compare-cell-select").addEventListener("change", (e) => {
-    const cid = e.target.value;
-    if (cid && !state.comparisonCells.includes(cid)) {
-      state.comparisonCells.push(cid);
-      updateComparisonChart();
-      populateCompareDropdown();
-    }
-    e.target.value = "";
-  });
+  const compSelect = document.getElementById("compare-cell-select");
+  if (compSelect) {
+    compSelect.addEventListener("change", (e) => {
+      const cid = e.target.value;
+      if (cid && !state.comparisonCells.includes(cid)) {
+        state.comparisonCells.push(cid);
+        updateComparisonChart();
+        populateCompareDropdown();
+      }
+      e.target.value = "";
+    });
+  }
 
   // Quick Cohort: Same Policy
-  document.getElementById("btn-compare-same-policy").addEventListener("click", () => {
-    if (!state.currentBatteryData) return;
-    const policy = state.currentBatteryData.metadata.policy;
-    const matched = state.batteriesList
-      .filter((b) => b.policy === policy && b.is_benchmark_eligible)
-      .map((b) => b.cell_id);
+  const btnSamePolicy = document.getElementById("btn-compare-same-policy");
+  if (btnSamePolicy) {
+    btnSamePolicy.addEventListener("click", () => {
+      if (!state.currentBatteryData) return;
+      const policy = state.currentBatteryData.metadata.policy;
+      const matched = state.batteriesList
+        .filter((b) => b.policy === policy && b.is_benchmark_eligible)
+        .map((b) => b.cell_id);
 
-    if (matched.length > 0) {
-      state.comparisonCells = Array.from(new Set([state.currentBatteryId, ...matched])).slice(0, 5);
-      updateComparisonChart();
-      populateCompareDropdown();
-    }
-  });
+      if (matched.length > 0) {
+        state.comparisonCells = Array.from(new Set([state.currentBatteryId, ...matched])).slice(0, 5);
+        updateComparisonChart();
+        populateCompareDropdown();
+      }
+    });
+  }
 
   // Quick Cohort: Across Batches
-  document.getElementById("btn-compare-batch-samples").addEventListener("click", () => {
-    state.comparisonCells = ["b1c0", "b2c0", "b3c0"];
-    updateComparisonChart();
-    populateCompareDropdown();
-  });
+  const btnBatches = document.getElementById("btn-compare-batch-samples");
+  if (btnBatches) {
+    btnBatches.addEventListener("click", () => {
+      state.comparisonCells = ["b1c0", "b2c0", "b3c0"];
+      updateComparisonChart();
+      populateCompareDropdown();
+    });
+  }
 
   // Reset Comparison
-  document.getElementById("btn-clear-compare").addEventListener("click", () => {
-    state.comparisonCells = [state.currentBatteryId];
-    updateComparisonChart();
-    populateCompareDropdown();
-  });
+  const btnClearComp = document.getElementById("btn-clear-compare");
+  if (btnClearComp) {
+    btnClearComp.addEventListener("click", () => {
+      state.comparisonCells = [state.currentBatteryId];
+      updateComparisonChart();
+      populateCompareDropdown();
+    });
+  }
 
   // Research Tabs Switcher
-  const researchTabs = document.querySelectorAll("#research-tabs-bar .research-tab-btn");
-  researchTabs.forEach((btn) => {
+  const rTabs = document.querySelectorAll("#research-tabs-bar .research-tab-btn");
+  rTabs.forEach((btn) => {
     btn.addEventListener("click", () => {
-      researchTabs.forEach((b) => b.classList.remove("active"));
+      rTabs.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      const targetId = btn.dataset.tab;
-      document.querySelectorAll(".research-panel").forEach((panel) => {
-        panel.style.display = panel.id === targetId ? "block" : "none";
-      });
+      const targetPanelId = btn.dataset.tab;
+      document.querySelectorAll(".research-panel").forEach((p) => (p.style.display = "none"));
+      const p = document.getElementById(targetPanelId);
+      if (p) p.style.display = "block";
     });
   });
 }
 
 /**
- * Fetches and renders details for the selected battery.
+ * Loads and renders battery details across all dashboard sections.
  */
 async function loadBattery(cellId) {
   try {
-    const cutoffParam = state.currentCutoff;
-    const res = await fetch(`/api/battery/${cellId}?cutoff=${cutoffParam}`);
-    if (!res.ok) throw new Error(`Failed to load data for ${cellId}`);
+    const cutoff = state.currentCutoff;
+    const effectiveCutoff = cutoff === "all" ? 100 : cutoff;
 
+    // Fetch primary battery details
+    const res = await fetch(`/api/battery?id=${cellId}&cutoff=${cutoff}`);
+    if (!res.ok) throw new Error(`Could not load battery data for ${cellId}.`);
     const data = await res.json();
     state.currentBatteryData = data;
 
-    // Update all UI panels
-    renderMetadataStrip(data.metadata);
+    // 1. Render Summary Cards
     renderSummaryCards(data.summary_cards, data.metadata);
-    renderTrajectoryChart();
-    renderFeaturesTable();
-    renderGroundTruthTargets(data.target_info, data.metadata);
-    renderFactualObservations(data.factual_observations);
 
-    // Phase 7 Enhancements
-    renderRiskPredictions(data.model_predictions, data.metadata, cutoffParam);
-    renderPeerRelativeSection(cellId, cutoffParam);
-    renderPMRIGauge(data.peer_info);
+    // 2. Render Metadata Strip & Quick Tally
+    renderMetadataStrip(data.metadata);
     updateElevatedRiskTally();
 
+    // 3. Render Features Table
+    renderFeaturesTable();
+
+    // 4. Render Main Trajectory Chart
+    renderTrajectoryChart();
+
+    // 5. Render ML Risk Predictions & Comparison
+    renderRiskPredictions(data.model_predictions, data.metadata, cutoff);
+
+    // 6. Render Sequestered Ground-Truth Targets
+    renderGroundTruthTargets(data.targets, data.metadata);
+
+    // 7. Render Factual Observations
+    renderFactualObservations(data.factual_observations);
+
+    // 8. Render Peer-Relative Aligned Trajectory Chart & PMRI
+    renderPeerRelativeSection(cellId, effectiveCutoff);
+    renderPMRISection(data.peer_info);
+
+    // 9. Render M5 Robustness Engine Section
+    renderM5Section(cellId, effectiveCutoff);
+
   } catch (err) {
-    console.error("Error loading battery details:", err);
+    console.error("Error loading battery:", err);
   }
 }
 
 /**
- * Updates the metadata preview strip in the controls card.
+ * Updates the Overview view model risk breakdown counts.
  */
-function renderMetadataStrip(meta) {
-  document.getElementById("meta-batch").textContent = meta.batch || "--";
-  document.getElementById("meta-partition").textContent = meta.benchmark_partition || "--";
-  document.getElementById("meta-policy").textContent = meta.policy || "--";
-  updateElevatedRiskTally();
+function updateOverviewRiskBreakdown() {
+  if (!state.overviewData || !state.overviewData.elevated_risk_counts) return;
+  const cutoffCounts = state.overviewData.elevated_risk_counts[100] || {};
+  const setEl = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val !== undefined ? `${val} / 124` : "--";
+  };
+  setEl("rmb-m1", cutoffCounts["M1"]);
+  setEl("rmb-m2", cutoffCounts["M2"]);
+  setEl("rmb-m3", cutoffCounts["M3"]);
+  setEl("rmb-m4", cutoffCounts["M4"]);
+  setEl("rmb-m5", cutoffCounts["M5"]);
 }
 
 /**
- * Updates the elevated risk tally in the metadata strip based on active cutoff and model.
+ * Renders the top metadata strip tags.
+ */
+function renderMetadataStrip(meta) {
+  document.getElementById("meta-batch").textContent = meta.batch;
+  document.getElementById("meta-partition").textContent = meta.benchmark_partition;
+  document.getElementById("meta-policy").textContent = meta.policy;
+}
+
+/**
+ * Updates the Elevated Risk Count pill in the controller strip.
  */
 function updateElevatedRiskTally() {
   const tallyEl = document.getElementById("meta-risk-tally");
-  if (!tallyEl || !state.overviewData) return;
+  if (!tallyEl || !state.overviewData || !state.overviewData.elevated_risk_counts) return;
 
-  const activeCutoff = state.currentCutoff === "all" ? 100 : state.currentCutoff;
-  const activeModel = state.currentModel;
-  const counts = state.overviewData.elevated_risk_counts || {};
+  const effectiveCutoff = state.currentCutoff === "all" ? 100 : state.currentCutoff;
+  const cutoffMap = state.overviewData.elevated_risk_counts[effectiveCutoff];
 
-  if (counts[activeCutoff] && counts[activeCutoff][activeModel] !== undefined) {
-    const c = counts[activeCutoff][activeModel];
-    tallyEl.textContent = `${c} / 124 cells elevated (Cutoff ${activeCutoff}, ${activeModel})`;
+  if (cutoffMap && cutoffMap[state.currentModel] !== undefined) {
+    const count = cutoffMap[state.currentModel];
+    tallyEl.textContent = `${count} / 124 Cells (${((count / 124) * 100).toFixed(1)}%)`;
   } else {
     tallyEl.textContent = "--";
   }
 }
 
 /**
- * Populates the top summary metric cards.
+ * Populates physical summary metric cards.
  */
 function renderSummaryCards(cards, meta) {
-  document.getElementById("card-cell-id").textContent = cards.cell_id;
+  document.getElementById("card-cell-id").textContent = meta.cell_id;
   const statusEl = document.getElementById("card-cell-status");
+
   if (meta.is_benchmark_eligible) {
-    statusEl.textContent = `Benchmark Eligible (${meta.benchmark_partition})`;
-    statusEl.className = "metric-sub text-teal";
+    statusEl.innerHTML = `<span class="badge badge-teal">${meta.benchmark_partition} (Eligible)</span>`;
   } else {
-    statusEl.textContent = `Excluded: ${meta.exclusion_reason || "Non-conforming"}`;
-    statusEl.className = "metric-sub text-amber";
+    statusEl.innerHTML = `<span class="badge badge-amber">Excluded Channel</span>`;
   }
 
   document.getElementById("card-observed-cycles").textContent = cards.observed_cycles_in_view;
-  document.getElementById("card-total-cycles").textContent = `of ${cards.total_life_cycles || cards.total_cycles_recorded} total life`;
+  document.getElementById("card-total-cycles").textContent = `of ${cards.total_cycles_recorded} recorded`;
 
-  document.getElementById("card-latest-q").textContent =
-    cards.q_latest_ah !== null ? cards.q_latest_ah.toFixed(4) : "--";
-  document.getElementById("card-initial-q").textContent =
-    cards.q_start_ah !== null ? `Baseline (Cyc 2): ${cards.q_start_ah.toFixed(4)} Ah` : "Baseline: --";
+  document.getElementById("card-latest-q").textContent = cards.q_latest_ah !== null ? cards.q_latest_ah.toFixed(3) : "--";
+  document.getElementById("card-initial-q").textContent = `Baseline (Cyc 2): ${cards.q_start_ah !== null ? cards.q_start_ah.toFixed(3) + " Ah" : "--"}`;
 
-  const retEl = document.getElementById("card-retention");
-  if (cards.retention_pct !== null) {
-    retEl.textContent = `${cards.retention_pct.toFixed(2)}%`;
-    retEl.className = cards.retention_pct >= 95 ? "metric-value text-emerald" : "metric-value text-amber";
-  } else {
-    retEl.textContent = "--%";
-  }
+  document.getElementById("card-retention").textContent = cards.capacity_retention_pct !== null ? `${cards.capacity_retention_pct.toFixed(1)}%` : "--";
+  document.getElementById("card-fade-delta").textContent = `Fade ΔQ: ${cards.capacity_fade_delta_ah !== null ? cards.capacity_fade_delta_ah.toFixed(3) + " Ah" : "--"}`;
 
-  const fadeEl = document.getElementById("card-fade-delta");
-  if (cards.q_change_ah !== null) {
-    fadeEl.textContent = `Fade ΔQ: ${cards.q_change_ah > 0 ? "+" : ""}${cards.q_change_ah.toFixed(4)} Ah`;
-  } else {
-    fadeEl.textContent = "Fade ΔQ: -- Ah";
-  }
+  document.getElementById("card-latest-ir").textContent = cards.ir_latest_ohm !== null ? cards.ir_latest_ohm.toFixed(4) : "--";
+  document.getElementById("card-ir-growth").textContent = `Growth: ${cards.ir_growth_pct !== null ? (cards.ir_growth_pct >= 0 ? "+" : "") + cards.ir_growth_pct.toFixed(1) + "%" : "--"}`;
 
-  document.getElementById("card-latest-ir").textContent =
-    cards.ir_latest_ohm !== null ? cards.ir_latest_ohm.toFixed(5) : "--";
-  document.getElementById("card-ir-growth").textContent =
-    cards.ir_change_pct !== null ? `Growth: ${cards.ir_change_pct > 0 ? "+" : ""}${cards.ir_change_pct.toFixed(2)}%` : "--";
-
-  document.getElementById("card-tmax").textContent =
-    cards.tmax_latest_c !== null ? cards.tmax_latest_c.toFixed(1) : "--";
-  document.getElementById("card-chargetime").textContent =
-    cards.ct_latest_min !== null ? `Charge: ${cards.ct_latest_min.toFixed(1)} min` : "--";
+  document.getElementById("card-tmax").textContent = cards.tmax_latest_c !== null ? cards.tmax_latest_c.toFixed(1) : "--";
+  document.getElementById("card-chargetime").textContent = `Charge time: ${cards.chargetime_latest_min !== null ? cards.chargetime_latest_min.toFixed(1) + " min" : "--"}`;
 }
 
 /**
- * Renders the primary single-battery trajectory chart using Chart.js.
+ * Renders the main cycle-by-cycle trajectory chart using Chart.js.
  */
 function renderTrajectoryChart() {
-  if (!state.currentBatteryData) return;
   const ctx = document.getElementById("trajectory-chart").getContext("2d");
-  const cycles = state.currentBatteryData.cycles || [];
-  const metric = state.currentMetric;
-  const metaInfo = METRIC_META[metric] || METRIC_META.QDischarge;
+  if (!state.currentBatteryData) return;
 
-  const points = cycles
-    .filter((c) => (metric === "QDischarge" ? c.cycle >= 2 : c[metric] > 0))
-    .map((c) => ({ x: c.cycle, y: c[metric] }));
+  const cycles = state.currentBatteryData.cycles;
+  const metric = state.currentMetric;
+  const metaInfo = METRIC_META[metric];
+
+  const points = cycles.map((c) => ({
+    x: c.cycle,
+    y: c[metric],
+  })).filter((p) => p.y !== null && p.y !== undefined);
 
   if (state.trajectoryChart) {
     state.trajectoryChart.destroy();
   }
 
-  const isCapacity = metric === "QDischarge";
-  document.getElementById("legend-nominal").style.display = isCapacity ? "inline-flex" : "none";
-  document.getElementById("legend-eol").style.display = isCapacity ? "inline-flex" : "none";
-
   const datasets = [
     {
-      label: `${state.currentBatteryId} — ${metaInfo.label} (${metaInfo.unit})`,
+      label: `${metaInfo.label} (${state.currentBatteryId})`,
       data: points,
       borderColor: metaInfo.color,
-      backgroundColor: "rgba(56, 189, 248, 0.08)",
-      borderWidth: 2.2,
-      pointRadius: points.length <= 120 ? 3 : 0,
-      pointHoverRadius: 5,
+      backgroundColor: "rgba(56, 189, 248, 0.05)",
+      borderWidth: 2,
+      pointRadius: points.length > 200 ? 0 : 2,
+      pointHoverRadius: 4,
       tension: 0.1,
-      fill: isCapacity,
+      fill: false,
     },
   ];
 
-  if (isCapacity && points.length > 0) {
-    const minX = points[0].x;
-    const maxX = points[points.length - 1].x;
-
+  // Capacity threshold reference lines
+  if (metric === "QDischarge") {
+    const maxX = Math.max(...points.map((p) => p.x), 100);
     datasets.push({
       label: "Nominal Capacity (1.10 Ah)",
-      data: [{ x: minX, y: 1.1 }, { x: maxX, y: 1.1 }],
+      data: [{ x: 1, y: 1.10 }, { x: maxX, y: 1.10 }],
       borderColor: "#10b981",
       borderWidth: 1.5,
-      borderDash: [5, 5],
+      borderDash: [4, 4],
       pointRadius: 0,
       fill: false,
     });
-
     datasets.push({
       label: "80% EOL Threshold (0.88 Ah)",
-      data: [{ x: minX, y: 0.88 }, { x: maxX, y: 0.88 }],
-      borderColor: "#ef4444",
+      data: [{ x: 1, y: 0.88 }, { x: maxX, y: 0.88 }],
+      borderColor: "#f43f5e",
       borderWidth: 1.5,
-      borderDash: [5, 5],
+      borderDash: [6, 4],
+      pointRadius: 0,
+      fill: false,
+    });
+  }
+
+  // Vertical cutoff reference indicator
+  if (state.currentCutoff !== "all") {
+    const minY = Math.min(...points.map((p) => p.y)) * 0.95;
+    const maxY = Math.max(...points.map((p) => p.y)) * 1.05;
+    datasets.push({
+      label: `Observation Cutoff (${state.currentCutoff})`,
+      data: [
+        { x: state.currentCutoff, y: minY },
+        { x: state.currentCutoff, y: maxY },
+      ],
+      borderColor: "rgba(255, 255, 255, 0.4)",
+      borderWidth: 1.5,
+      borderDash: [4, 4],
       pointRadius: 0,
       fill: false,
     });
@@ -439,14 +563,11 @@ function renderTrajectoryChart() {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 300 },
-      interaction: { mode: "nearest", intersect: false },
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: "#0f172a",
-          titleColor: "#38bdf8",
-          bodyColor: "#f8fafc",
-          borderColor: "#334155",
+          backgroundColor: "#162035",
+          borderColor: "#23314d",
           borderWidth: 1,
           padding: 10,
           callbacks: {
@@ -473,7 +594,7 @@ function renderTrajectoryChart() {
 }
 
 /**
- * Renders the ML EOL Risk Prediction card and four-model comparison table.
+ * Renders the ML EOL Risk Prediction card and five-model comparison table.
  */
 function renderRiskPredictions(preds, meta, cutoff) {
   const probNumEl = document.getElementById("risk-prob-num");
@@ -528,9 +649,9 @@ function renderRiskPredictions(preds, meta, cutoff) {
     statusBadgeEl.textContent = "Prediction Unavailable";
   }
 
-  // Populate Four-Model Comparative Table
+  // Populate Five-Model Comparative Table
   tbody.innerHTML = "";
-  const modelOrder = ["M1", "M2", "M3", "M4"];
+  const modelOrder = ["M1", "M2", "M3", "M4", "M5"];
   modelOrder.forEach((mKey) => {
     const det = preds.model_details[mKey];
     if (!det) return;
@@ -543,8 +664,8 @@ function renderRiskPredictions(preds, meta, cutoff) {
 
     const probVal = det.probability !== null ? (det.probability * 100).toFixed(2) + "%" : "--";
     const riskBadgeHtml = det.is_elevated_risk
-      ? `<span class="badge badge-rose" style="font-size:0.75rem;">Elevated Risk</span>`
-      : `<span class="badge badge-emerald" style="font-size:0.75rem;">Nominal</span>`;
+      ? `<span class="badge badge-danger" style="font-size:0.72rem;">Elevated Risk</span>`
+      : `<span class="badge badge-success" style="font-size:0.72rem;">Nominal</span>`;
 
     tr.innerHTML = `
       <td><strong>${mKey}</strong></td>
@@ -598,94 +719,95 @@ async function renderPeerRelativeSection(cellId, cutoff) {
     const relMetrics = [
       {
         name: "Relative Capacity Deviation (ΔQ_rel)",
-        col: "relative_capacity_deviation",
-        val: peerData.relative_capacity_deviation,
-        desc: "Discharge capacity difference between target cell and peer centroid at cutoff (Ah).",
+        col: "peer_rel_capacity_fade_delta",
+        val: state.currentBatteryData.peer_info ? state.currentBatteryData.peer_info.peer_rel_capacity_fade_delta : null,
+        desc: "Difference between cell capacity fade and mean peer capacity fade.",
       },
       {
-        name: "Relative Slope Deviation (ΔSlope_rel)",
-        col: "relative_slope_deviation",
-        val: peerData.relative_slope_deviation,
-        desc: "Trajectory capacity fade slope difference relative to matched peers.",
+        name: "Relative Resistance Growth (ΔIR_rel)",
+        col: "peer_rel_ir_growth_delta",
+        val: state.currentBatteryData.peer_info ? state.currentBatteryData.peer_info.peer_rel_ir_growth_delta : null,
+        desc: "Differential internal resistance growth rate compared to matched reference peers.",
       },
       {
-        name: "Relative Fade Deviation (ΔFade_rel)",
-        col: "relative_fade_deviation",
-        val: peerData.relative_fade_deviation,
-        desc: "Cumulative capacity degradation divergence relative to peer group mean.",
+        name: "Cohort Trajectory Dispersion",
+        col: "peer_dispersion_q",
+        val: state.currentBatteryData.peer_info ? state.currentBatteryData.peer_info.peer_dispersion_q : null,
+        desc: "Standard deviation of discharge capacity across the k=5 peers at cutoff.",
       },
       {
-        name: "Relative Internal Resistance Deviation",
-        col: "relative_ir_deviation",
-        val: peerData.relative_ir_deviation,
-        desc: "SEI growth impedance divergence relative to peer reference group (Ω).",
+        name: "Mean Reference Peer Distance",
+        col: "peer_dist_mean",
+        val: state.currentBatteryData.peer_info ? state.currentBatteryData.peer_info.peer_dist_mean : null,
+        desc: "Average standardized Euclidean distance in initial state space (Q2, IR2, protocol).",
       },
     ];
 
     relMetrics.forEach((m) => {
       const tr = document.createElement("tr");
-      const valStr = m.val !== null && m.val !== undefined ? m.val.toFixed(5) : "--";
+      const valStr = m.val !== null && m.val !== undefined ? (typeof m.val === "number" ? m.val.toFixed(4) : m.val) : "--";
       tr.innerHTML = `
         <td><strong>${m.name}</strong></td>
         <td><span class="code-badge">${m.col}</span></td>
-        <td class="text-cyan"><strong>${valStr}</strong></td>
-        <td class="text-muted" style="font-size:0.78rem;">${m.desc}</td>
+        <td class="feat-val">${valStr}</td>
+        <td class="text-muted">${m.desc}</td>
       `;
       metricsTbody.appendChild(tr);
     });
 
   } catch (err) {
-    console.error("Error rendering peer-relative trajectories:", err);
+    console.error("Error rendering peer section:", err);
   }
 }
 
 /**
- * Draws the multi-line peer overlay chart using Chart.js.
+ * Renders the aligned peer overlay Chart.js chart.
  */
-function renderPeerOverlayChart(data) {
+function renderPeerOverlayChart(peerData) {
   const ctx = document.getElementById("peer-trajectory-chart").getContext("2d");
-
   if (state.peerTrajectoryChart) {
     state.peerTrajectoryChart.destroy();
   }
 
   const datasets = [];
 
-  // 1. Target Cell Dataset
+  // 1. Target Cell Trajectory
   datasets.push({
-    label: `Target Battery (${data.cell_id})`,
-    data: data.target_trajectory || [],
+    label: `Target Battery (${peerData.cell_id})`,
+    data: peerData.target_trajectory.map((p) => ({ x: p.cycle, y: p.q_discharge })),
     borderColor: "#38bdf8",
-    backgroundColor: "rgba(56, 189, 248, 0.12)",
-    borderWidth: 2.8,
+    backgroundColor: "transparent",
+    borderWidth: 3,
     pointRadius: 0,
-    pointHoverRadius: 4,
     tension: 0.1,
+    zIndex: 10,
   });
 
-  // 2. Individual Peer Lines (Muted)
-  (data.peers || []).forEach((p, idx) => {
+  // 2. Peer Trajectories (k=5)
+  (peerData.peers || []).forEach((peer, idx) => {
     datasets.push({
-      label: `Peer ${idx + 1} (${p.cell_id}, d=${p.distance.toFixed(3)})`,
-      data: p.points || [],
-      borderColor: PALETTE[idx + 1] || "#64748b",
-      borderWidth: 1.4,
-      borderDash: [3, 3],
+      label: `Peer ${idx + 1} (${peer.cell_id})`,
+      data: peer.trajectory.map((p) => ({ x: p.cycle, y: p.q_discharge })),
+      borderColor: PALETTE[idx + 1] || "#94a3b8",
+      backgroundColor: "transparent",
+      borderWidth: 1.5,
+      borderDash: [2, 2],
       pointRadius: 0,
-      fill: false,
+      tension: 0.1,
     });
   });
 
-  // 3. Aggregate Peer Mean Trajectory
-  if (data.mean_peer_trajectory && data.mean_peer_trajectory.length > 0) {
+  // 3. Centroid / Mean Peer Trajectory
+  if (peerData.mean_peer_trajectory && peerData.mean_peer_trajectory.length > 0) {
     datasets.push({
-      label: "Matched Peer Centroid (Mean Reference)",
-      data: data.mean_peer_trajectory,
-      borderColor: "#fbbf24",
-      borderWidth: 2.2,
-      borderDash: [6, 4],
+      label: "Reference Peer Centroid (Mean)",
+      data: peerData.mean_peer_trajectory.map((p) => ({ x: p.cycle, y: p.mean_q })),
+      borderColor: "#0d9488",
+      backgroundColor: "transparent",
+      borderWidth: 2.5,
+      borderDash: [5, 5],
       pointRadius: 0,
-      fill: false,
+      tension: 0.1,
     });
   }
 
@@ -696,16 +818,15 @@ function renderPeerOverlayChart(data) {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 300 },
-      interaction: { mode: "nearest", intersect: false },
       plugins: {
         legend: {
           display: true,
-          labels: { color: "#94a3b8", font: { size: 10 } },
+          labels: { color: "#94a3b8", font: { size: 11 }, boxWidth: 12 },
         },
         tooltip: {
-          backgroundColor: "#0f172a",
-          titleColor: "#38bdf8",
-          bodyColor: "#f8fafc",
+          backgroundColor: "#162035",
+          borderColor: "#23314d",
+          borderWidth: 1,
           callbacks: {
             title: (items) => `Cycle ${items[0].parsed.x}`,
             label: (item) => `${item.dataset.label}: ${item.parsed.y.toFixed(4)} Ah`,
@@ -715,7 +836,7 @@ function renderPeerOverlayChart(data) {
       scales: {
         x: {
           type: "linear",
-          title: { display: true, text: "Cycle Number (Observed Window)", color: "#94a3b8" },
+          title: { display: true, text: "Observation Cycle", color: "#94a3b8" },
           grid: { color: "rgba(255, 255, 255, 0.05)" },
           ticks: { color: "#94a3b8" },
         },
@@ -730,204 +851,393 @@ function renderPeerOverlayChart(data) {
 }
 
 /**
- * Renders the PMRI gauge card, composite score, and component breakdown bars.
+ * Renders the PMRI scores and component progress bars.
  */
-function renderPMRIGauge(peerInfo) {
+function renderPMRISection(pInfo) {
   const compValEl = document.getElementById("pmri-composite-val");
   const meanDistEl = document.getElementById("pmri-mean-dist");
   const dispEl = document.getElementById("pmri-dispersion");
-  const warnBadgeEl = document.getElementById("pmri-warning-badge");
+  const warnBadge = document.getElementById("pmri-warning-badge");
 
-  if (!peerInfo || peerInfo.pmri === null) {
-    compValEl.textContent = "--";
+  if (!pInfo || pInfo.pmri === null || pInfo.pmri === undefined) {
+    compValEl.textContent = "N/A";
     meanDistEl.textContent = "--";
     dispEl.textContent = "--";
-    warnBadgeEl.className = "badge badge-outline";
-    warnBadgeEl.textContent = "No Peer Data";
+    warnBadge.className = "badge badge-warning";
+    warnBadge.textContent = "Censored / Excluded";
     return;
   }
 
-  compValEl.textContent = peerInfo.pmri.toFixed(4);
-  meanDistEl.textContent = peerInfo.mean_peer_distance ? peerInfo.mean_peer_distance.toFixed(4) : "--";
-  dispEl.textContent = peerInfo.peer_trajectory_dispersion ? `${peerInfo.peer_trajectory_dispersion.toFixed(5)} Ah` : "--";
+  compValEl.textContent = pInfo.pmri.toFixed(4);
+  meanDistEl.textContent = pInfo.peer_dist_mean ? pInfo.peer_dist_mean.toFixed(4) : "--";
+  dispEl.textContent = pInfo.peer_dispersion_q ? `${pInfo.peer_dispersion_q.toFixed(4)} Ah` : "--";
 
-  if (peerInfo.reliability_warning === "NONE" || !peerInfo.reliability_warning) {
-    warnBadgeEl.className = "badge badge-success";
-    warnBadgeEl.textContent = "✓ High Confidence Match";
+  if (pInfo.reliability_warning && pInfo.reliability_warning !== "NONE") {
+    warnBadge.className = "badge badge-danger";
+    warnBadge.textContent = `Warning: ${pInfo.reliability_warning}`;
   } else {
-    warnBadgeEl.className = "badge badge-warning";
-    warnBadgeEl.textContent = `⚠️ Warning: ${peerInfo.reliability_warning}`;
+    warnBadge.className = "badge badge-success";
+    warnBadge.textContent = "Reliable Peer Match";
   }
 
-  // Component bars
-  const setBar = (fillId, valId, score) => {
-    const fillEl = document.getElementById(fillId);
-    const valEl = document.getElementById(valId);
-    if (!fillEl || !valEl) return;
-    if (score !== null && score !== undefined) {
-      const pct = Math.max(0, Math.min(100, score * 100));
-      fillEl.style.width = `${pct}%`;
-      valEl.textContent = score.toFixed(4);
-    } else {
-      fillEl.style.width = "0%";
-      valEl.textContent = "--";
+  // Component Progress Bars
+  const setBar = (fillId, valId, val) => {
+    const fEl = document.getElementById(fillId);
+    const vEl = document.getElementById(valId);
+    if (fEl && vEl) {
+      if (val !== null && val !== undefined) {
+        fEl.style.width = `${Math.min(100, Math.max(0, val * 100))}%`;
+        vEl.textContent = val.toFixed(4);
+      } else {
+        fEl.style.width = "0%";
+        vEl.textContent = "--";
+      }
     }
   };
 
-  setBar("bar-s-sim", "val-s-sim", peerInfo.peer_similarity_score);
-  setBar("bar-s-cov", "val-s-cov", peerInfo.peer_availability_score);
-  setBar("bar-s-agree", "val-s-agree", peerInfo.peer_agreement_score);
-  setBar("bar-s-consist", "val-s-consist", peerInfo.peer_feature_completeness);
+  setBar("bar-s-sim", "val-s-sim", pInfo.pmri_s_sim);
+  setBar("bar-s-cov", "val-s-cov", pInfo.pmri_s_cov);
+  setBar("bar-s-agree", "val-s-agree", pInfo.pmri_s_agree);
+  setBar("bar-s-consist", "val-s-consist", pInfo.pmri_s_consist);
 }
 
 /**
- * Loads and renders the Research Model-Comparison Results & Hypothesis Findings section.
+ * Fetches and renders the M5 Robustness Engine live diagnostics, perturbation audit traces, and sensitivity waterfall.
+ */
+async function renderM5Section(cellId, cutoff) {
+  const effectiveCutoff = cutoff === "all" ? 100 : cutoff;
+  document.getElementById("m5-active-cell").textContent = cellId;
+  document.getElementById("m5-active-cutoff").textContent = effectiveCutoff;
+
+  const probPeerEl = document.getElementById("m5-prob-peer");
+  const probHistEl = document.getElementById("m5-prob-history");
+  const uEl = document.getElementById("m5-instability-u");
+  const tEl = document.getElementById("m5-trust-score");
+  const finalEl = document.getElementById("m5-prob-final");
+  const badgeEl = document.getElementById("m5-abstention-badge");
+  const explanationEl = document.getElementById("m5-explanation-box");
+  const tracesTbody = document.getElementById("m5-perturbations-tbody");
+
+  try {
+    const res = await fetch(`/api/m5/robustness?id=${cellId}&cutoff=${effectiveCutoff}`);
+    if (!res.ok) {
+      probPeerEl.textContent = "N/A";
+      probHistEl.textContent = "N/A";
+      uEl.textContent = "--";
+      tEl.textContent = "--";
+      finalEl.textContent = "N/A";
+      badgeEl.className = "badge badge-outline";
+      badgeEl.textContent = "Unavailable";
+      explanationEl.textContent = "M5 robustness data unavailable for this channel.";
+      tracesTbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No perturbations available.</td></tr>`;
+      return;
+    }
+
+    const m5 = await res.json();
+    state.currentM5Data = m5;
+
+    probPeerEl.textContent = `${(m5.prob_peer * 100).toFixed(2)}%`;
+    probHistEl.textContent = `${(m5.prob_history * 100).toFixed(2)}%`;
+    uEl.textContent = m5.instability_u !== null ? (m5.instability_u < 0.001 ? m5.instability_u.toExponential(3) : m5.instability_u.toFixed(4)) : "--";
+    tEl.textContent = m5.trust_score !== null ? m5.trust_score.toFixed(4) : "--";
+    finalEl.textContent = `${(m5.prob_m5 * 100).toFixed(2)}%`;
+
+    // Abstention badge
+    badgeEl.textContent = m5.abstention_reason || "NOMINAL_TRUST";
+    if (m5.abstention_reason === "NOMINAL_TRUST") {
+      badgeEl.className = "badge badge-success";
+    } else if (m5.abstention_reason === "LOW_ADAPTIVE_TRUST") {
+      badgeEl.className = "badge badge-warning";
+    } else {
+      badgeEl.className = "badge badge-danger";
+    }
+
+    explanationEl.innerHTML = `<strong>Inference Policy:</strong> ${m5.explanation}`;
+
+    // Populate perturbation traces table
+    tracesTbody.innerHTML = "";
+    (m5.perturbations || []).forEach((p) => {
+      const tr = document.createElement("tr");
+      const deltaStr = p.prob_delta !== null ? (p.prob_delta >= 0 ? "+" : "") + (p.prob_delta * 100).toFixed(3) + "%" : "0.000%";
+      const flipBadge = p.prediction_flip
+        ? `<span class="badge badge-danger" style="font-size:0.68rem;">FLIP</span>`
+        : `<span class="badge badge-outline" style="font-size:0.68rem;">Stable</span>`;
+
+      tr.innerHTML = `
+        <td><code>${p.perturbation_id}</code></td>
+        <td>${p.perturbation_type}</td>
+        <td>${p.excluded_peer || '<span class="text-muted">—</span>'}</td>
+        <td>${p.added_peer || '<span class="text-muted">—</span>'}</td>
+        <td><strong>${(p.predicted_prob * 100).toFixed(3)}%</strong></td>
+        <td class="${p.prob_delta > 0 ? 'text-rose' : 'text-teal'}">${deltaStr}</td>
+        <td>${flipBadge}</td>
+      `;
+      tracesTbody.appendChild(tr);
+    });
+
+    // Render Sensitivity Waterfall Chart
+    renderM5SensitivityChart(m5.sensitivity_ranking || []);
+
+  } catch (err) {
+    console.error("Error rendering M5 section:", err);
+  }
+}
+
+/**
+ * Renders the M5 peer sensitivity waterfall bar chart.
+ */
+function renderM5SensitivityChart(ranking) {
+  const ctx = document.getElementById("m5-sensitivity-chart").getContext("2d");
+  if (state.sensitivityChart) {
+    state.sensitivityChart.destroy();
+  }
+
+  if (!ranking || ranking.length === 0) {
+    return;
+  }
+
+  const labels = ranking.map((r) => r.peer_id);
+  const deltas = ranking.map((r) => r.prob_delta * 100);
+  const colors = deltas.map((d) => (d >= 0 ? "rgba(244, 63, 94, 0.7)" : "rgba(13, 148, 136, 0.7)"));
+  const borders = deltas.map((d) => (d >= 0 ? "#f43f5e" : "#0d9488"));
+
+  state.sensitivityChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Δ Failure Probability on Peer Removal (%)",
+          data: deltas,
+          backgroundColor: colors,
+          borderColor: borders,
+          borderWidth: 1.5,
+          borderRadius: 4,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#162035",
+          borderColor: "#23314d",
+          borderWidth: 1,
+          callbacks: {
+            label: (item) => `Δ Risk: ${item.parsed.y >= 0 ? "+" : ""}${item.parsed.y.toFixed(4)}%`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: "Excluded Peer Cell ID (LOO)", color: "#94a3b8" },
+          grid: { color: "rgba(255, 255, 255, 0.05)" },
+          ticks: { color: "#94a3b8" },
+        },
+        y: {
+          title: { display: true, text: "Δ Risk (%)", color: "#94a3b8" },
+          grid: { color: "rgba(255, 255, 255, 0.05)" },
+          ticks: { color: "#94a3b8" },
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Loads and renders Phase 6 research benchmark artifacts and hypothesis verdicts.
  */
 async function loadAndRenderResearchSection() {
   try {
-    // 1. Fetch performance metrics
+    // 1. Fetch Model Metrics Table
     const resMetrics = await fetch("/api/models/metrics");
     if (resMetrics.ok) {
       state.researchMetrics = await resMetrics.json();
       renderResearchMetricsTable(state.researchMetrics);
     }
 
-    // 2. Fetch hypothesis summary
-    const resSummary = await fetch("/api/research/summary");
-    if (resSummary.ok) {
-      state.researchSummary = await resSummary.json();
-      renderHypothesisVerdicts(state.researchSummary);
+    // 2. Fetch Hypothesis Summary
+    const resHyp = await fetch("/api/research/summary");
+    if (resHyp.ok) {
+      state.researchSummary = await resHyp.json();
+      renderHypothesisCards(state.researchSummary);
     }
 
-    // 3. Fetch paired differences
+    // 3. Fetch Paired Differences
     const resDiff = await fetch("/api/research/differences");
     if (resDiff.ok) {
       state.researchDifferences = await resDiff.json();
-      renderResearchDifferencesTable(state.researchDifferences);
+      renderDifferencesTable(state.researchDifferences);
     }
+
+    // 4. Fetch Multi-Algorithm Benchmark
+    const resAlgo = await fetch("/api/research/algorithms");
+    if (resAlgo.ok) {
+      state.multiAlgoMetrics = await resAlgo.json();
+      renderMultiAlgoTable(state.multiAlgoMetrics);
+    }
+
+    // 5. Fetch Multi-Seed Peer Controls
+    const resCtrl = await fetch("/api/research/peer-controls");
+    if (resCtrl.ok) {
+      state.peerControlsData = await resCtrl.json();
+      renderPeerControlsTable(state.peerControlsData);
+    }
+
+    // 6. Fetch Selective Prediction Trade-off
+    const resSel = await fetch("/api/research/selective-prediction");
+    if (resSel.ok) {
+      state.selectivePredictionData = await resSel.json();
+      renderSelectivePredictionTable(state.selectivePredictionData);
+    }
+
+    // Setup algorithm filter dropdown
+    const algoFilter = document.getElementById("filter-algo-select");
+    if (algoFilter && !algoFilter.dataset.bound) {
+      algoFilter.dataset.bound = "true";
+      algoFilter.addEventListener("change", (e) => {
+        if (state.multiAlgoMetrics) {
+          renderMultiAlgoTable(state.multiAlgoMetrics, e.target.value);
+        }
+      });
+    }
+
   } catch (err) {
-    console.error("Error loading research section data:", err);
+    console.error("Error loading research section:", err);
   }
 }
 
 /**
- * Renders the Phase 5/6 model performance benchmark table.
+ * Loads and renders Phase 7 M5 ablation studies.
+ */
+async function loadAndRenderM5Ablations() {
+  try {
+    const res = await fetch("/api/m5/ablations");
+    if (res.ok) {
+      state.m5Ablations = await res.json();
+      const tbody = document.getElementById("m5-ablations-tbody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      state.m5Ablations.forEach((row) => {
+        const tr = document.createElement("tr");
+        if (row.ablation_mode === "full") {
+          tr.style.backgroundColor = "rgba(6, 182, 212, 0.08)";
+          tr.style.fontWeight = "600";
+        }
+        tr.innerHTML = `
+          <td><strong>Cutoff ${row.cutoff}</strong></td>
+          <td><span class="code-badge">${row.ablation_mode}</span></td>
+          <td>${row.description}</td>
+          <td><strong>${row.primary_test_brier ? row.primary_test_brier.toFixed(4) : "--"}</strong></td>
+          <td>${row.primary_test_auroc ? row.primary_test_auroc.toFixed(4) : "--"}</td>
+          <td>${row.primary_test_auprc ? row.primary_test_auprc.toFixed(4) : "--"}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  } catch (err) {
+    console.error("Error loading M5 ablations:", err);
+  }
+}
+
+/**
+ * Renders the Research Model Metrics Table.
  */
 function renderResearchMetricsTable(metrics) {
   const tbody = document.getElementById("research-metrics-tbody");
-  if (!tbody || !metrics) return;
   tbody.innerHTML = "";
 
-  metrics.forEach((row) => {
+  metrics.forEach((m) => {
     const tr = document.createElement("tr");
-    const auc = row.auroc !== null && row.auroc !== undefined ? row.auroc.toFixed(4) : "NaN";
-    const prc = row.auprc !== null && row.auprc !== undefined ? row.auprc.toFixed(4) : "NaN";
-    const brier = row.brier_score !== null && row.brier_score !== undefined ? row.brier_score.toFixed(4) : "--";
-    const ece = row.ece !== null && row.ece !== undefined ? row.ece.toFixed(4) : "--";
-    const acc = row.accuracy !== null && row.accuracy !== undefined ? (row.accuracy * 100).toFixed(1) + "%" : "--";
-    const sens = row.sensitivity !== null && row.sensitivity !== undefined ? (row.sensitivity * 100).toFixed(1) + "%" : "--";
-    const spec = row.specificity !== null && row.specificity !== undefined ? (row.specificity * 100).toFixed(1) + "%" : "--";
-    const f1 = row.f1_score !== null && row.f1_score !== undefined ? row.f1_score.toFixed(3) : "--";
-
+    if (m.model === "M5") {
+      tr.style.backgroundColor = "rgba(6, 182, 212, 0.08)";
+      tr.style.fontWeight = "600";
+    }
+    const fmt = (val) => (val !== null && val !== undefined ? (typeof val === "number" ? val.toFixed(4) : val) : "--");
     tr.innerHTML = `
-      <td><strong>Cycle ${row.cutoff}</strong></td>
-      <td><span class="code-badge">${row.model}</span></td>
-      <td>${row.partition}</td>
-      <td class="text-muted">${row.n_samples} (${row.positive_count}/${row.negative_count})</td>
-      <td class="text-cyan"><strong>${auc}</strong></td>
-      <td>${prc}</td>
-      <td>${brier}</td>
-      <td>${ece}</td>
-      <td>${acc}</td>
-      <td>${sens}</td>
-      <td>${spec}</td>
-      <td>${f1}</td>
+      <td><strong>${m.cutoff} cyc</strong></td>
+      <td><strong>${m.model}</strong></td>
+      <td><span class="badge badge-outline">${m.partition}</span></td>
+      <td class="text-muted">${m.n_samples} (${m.n_positive}/${m.n_negative})</td>
+      <td>${fmt(m.auroc)}</td>
+      <td>${fmt(m.auprc)}</td>
+      <td><strong>${fmt(m.brier_score)}</strong></td>
+      <td>${fmt(m.ece)}</td>
+      <td>${fmt(m.accuracy)}</td>
+      <td>${fmt(m.sensitivity)}</td>
+      <td>${fmt(m.specificity)}</td>
+      <td>${fmt(m.f1)}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
 /**
- * Renders the formal hypothesis evaluation verdicts (H1–H4).
+ * Renders the Hypothesis Verdict Cards.
  */
-function renderHypothesisVerdicts(summary) {
+function renderHypothesisCards(summary) {
   const grid = document.getElementById("hypothesis-cards-grid");
-  if (!grid || !summary) return;
   grid.innerHTML = "";
 
-  const hypDefs = [
-    { key: "H1_incremental_peer_relative_value", title: "H1: Incremental Peer-Relative Value (M2 vs M3)" },
-    { key: "H2_peer_match_reliability_value", title: "H2: Value of Peer-Match Reliability (M3 vs M4)" },
-    { key: "H3_early_observation_usefulness", title: "H3: Early-Observation Usefulness (Cutoffs 40/70/100)" },
-    { key: "H4_reliability_under_weak_matching", title: "H4: Robustness & Negative Control (Scrambled Peers)" },
+  const hypKeys = [
+    { key: "H1_incremental_peer_relative_value", title: "H1: Incremental Peer-Relative Value (M3 vs M2)" },
+    { key: "H2_peer_match_reliability_value", title: "H2: Peer-Match Reliability Value (M4 vs M3)" },
+    { key: "H3_monotonic_cutoff_benefit", title: "H3: Monotonic Observation Benefit" },
+    { key: "H4_robustness_across_conditions", title: "H4: Generalization Across Batches" },
   ];
 
-  hypDefs.forEach(({ key, title }) => {
-    const data = summary[key];
+  hypKeys.forEach((item) => {
+    const data = summary[item.key];
     if (!data) return;
 
     const card = document.createElement("div");
     card.className = "hypothesis-card";
 
-    let verdictBadge = "";
-    let rationale = "";
-
-    if (key === "H1_incremental_peer_relative_value") {
-      const inDist = data.in_distribution_primary_test || {};
-      const ood = data.out_of_distribution_secondary_test || {};
-      verdictBadge = `<span class="hyp-verdict hyp-verdict-parity">In-Dist: Parity | OOD: Supported</span>`;
-      rationale = `<strong>Primary Test:</strong> ${inDist.rationale || ""}<br><br><strong>Secondary Test (Batch 3):</strong> ${ood.rationale || ""}`;
-    } else if (key === "H2_peer_match_reliability_value") {
-      verdictBadge = `<span class="hyp-verdict hyp-verdict-supported">Feature: Parity | Gate: Supported</span>`;
-      rationale = `<strong>Additive Feature:</strong> ${(data.as_additive_feature || {}).rationale || ""}<br><br><strong>Meta-Reliability Filter:</strong> ${(data.as_confidence_gate || {}).rationale || ""}`;
-    } else {
-      verdictBadge = `<span class="hyp-verdict hyp-verdict-supported">Supported</span>`;
-      rationale = data.rationale || "";
+    let verdictClass = "hyp-verdict-parity";
+    if (data.verdict.includes("SUPPORTED") && !data.verdict.includes("NOT")) {
+      verdictClass = "hyp-verdict-supported";
     }
 
     card.innerHTML = `
       <div class="hyp-header">
-        <span class="hyp-title">${title}</span>
-        ${verdictBadge}
+        <span class="hyp-title">${item.title}</span>
+        <span class="hyp-verdict ${verdictClass}">${data.verdict}</span>
       </div>
-      <p class="hyp-statement">“${data.hypothesis_statement || ""}”</p>
-      <div class="hyp-rationale">${rationale}</div>
+      <p class="hyp-statement">"${data.statement}"</p>
+      <p class="hyp-rationale"><strong>Empirical Rationale:</strong> ${data.rationale}</p>
     `;
     grid.appendChild(card);
   });
 }
 
 /**
- * Renders the paired model differences table with 95% bootstrap CIs.
+ * Renders the Paired Bootstrap Differences Table.
  */
-function renderResearchDifferencesTable(diffs) {
+function renderDifferencesTable(diffs) {
   const tbody = document.getElementById("research-diff-tbody");
-  if (!tbody || !diffs) return;
   tbody.innerHTML = "";
 
-  diffs.forEach((row) => {
+  diffs.forEach((d) => {
     const tr = document.createElement("tr");
-
-    const formatCI = (pt, l, u) => {
-      if (pt === null || pt === undefined || isNaN(pt)) return "NaN";
-      return `<strong>${pt > 0 ? "+" : ""}${pt.toFixed(4)}</strong> [${l.toFixed(4)}, ${u.toFixed(4)}]`;
+    const ciFmt = (mean, low, high) => {
+      if (mean === null || mean === undefined) return "--";
+      return `${mean >= 0 ? "+" : ""}${mean.toFixed(4)} [${low.toFixed(4)}, ${high.toFixed(4)}]`;
     };
 
-    const aucStr = formatCI(row.delta_auroc, row.delta_auroc_ci_lower, row.delta_auroc_ci_upper);
-    const prcStr = formatCI(row.delta_auprc, row.delta_auprc_ci_lower, row.delta_auprc_ci_upper);
-    const brierStr = formatCI(row.delta_brier, row.delta_brier_ci_lower, row.delta_brier_ci_upper);
-
-    const sigBadge = row.delta_auroc_significant || row.delta_brier_significant
-      ? `<span class="badge badge-rose" style="font-size:0.75rem;">Significant</span>`
-      : `<span class="badge badge-outline" style="font-size:0.75rem;">Parity (CI spans 0)</span>`;
+    const sigBadge = d.significant
+      ? `<span class="badge badge-success" style="font-size:0.72rem;">Significant</span>`
+      : `<span class="badge badge-outline" style="font-size:0.72rem;">Neutral / Inconclusive</span>`;
 
     tr.innerHTML = `
-      <td><strong>Cycle ${row.cutoff}</strong></td>
-      <td>${row.partition}</td>
-      <td><span class="code-badge">${row.comparison}</span> (${row.description})</td>
-      <td>${aucStr}</td>
-      <td>${prcStr}</td>
-      <td>${brierStr}</td>
+      <td><strong>${d.cutoff} cyc</strong></td>
+      <td><span class="badge badge-outline">${d.partition}</span></td>
+      <td><strong>${d.comparison}</strong></td>
+      <td>${ciFmt(d.delta_auroc_mean, d.delta_auroc_ci_lower, d.delta_auroc_ci_upper)}</td>
+      <td>${ciFmt(d.delta_auprc_mean, d.delta_auprc_ci_lower, d.delta_auprc_ci_upper)}</td>
+      <td>${ciFmt(d.delta_brier_mean, d.delta_brier_ci_lower, d.delta_brier_ci_upper)}</td>
       <td>${sigBadge}</td>
     `;
     tbody.appendChild(tr);
@@ -935,37 +1245,302 @@ function renderResearchDifferencesTable(diffs) {
 }
 
 /**
- * Updates the multi-battery exploratory comparison chart.
+ * Renders the Multi-Algorithm Benchmark Table with algorithm filter.
  */
-async function updateComparisonChart() {
-  if (state.comparisonCells.length === 0) return;
-  const ctx = document.getElementById("comparison-chart").getContext("2d");
+function renderMultiAlgoTable(records, selectedAlgo = "all") {
+  const tbody = document.getElementById("multi-algo-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
 
-  renderCompareChips();
+  const fmt = (val) => (val !== null && val !== undefined ? (typeof val === "number" ? val.toFixed(4) : val) : "--");
 
-  const idsParam = state.comparisonCells.join(",");
-  const cutoffParam = state.currentCutoff;
-  const metric = state.comparisonMetric;
+  const filtered = selectedAlgo === "all" ? records : records.filter((r) => r.algorithm === selectedAlgo);
+
+  filtered.forEach((r) => {
+    const tr = document.createElement("tr");
+    if (r.partition === "primary_test" && r.model === "M4") {
+      tr.style.backgroundColor = "rgba(6, 182, 212, 0.06)";
+    }
+    tr.innerHTML = `
+      <td><strong>${r.cutoff} cyc</strong></td>
+      <td><span class="code-badge">${r.algorithm}</span></td>
+      <td><span class="badge badge-outline">${r.algorithm_family || "--"}</span></td>
+      <td><strong>${r.model}</strong></td>
+      <td><span class="badge ${r.partition === 'primary_test' ? 'badge-accent' : 'badge-outline'}">${r.partition}</span></td>
+      <td>${fmt(r.auroc)}</td>
+      <td>${fmt(r.auprc)}</td>
+      <td><strong>${fmt(r.brier_score)}</strong></td>
+      <td>${fmt(r.sensitivity)}</td>
+      <td>${fmt(r.specificity)}</td>
+      <td>${fmt(r.f1_score)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/**
+ * Renders the Multi-Seed Peer Controls Table and PMRI summary.
+ */
+function renderPeerControlsTable(data) {
+  const tbody = document.getElementById("peer-controls-tbody");
+  if (!tbody || !data || !data.permutations) return;
+  tbody.innerHTML = "";
+
+  const perms = data.permutations;
+  const cutoffs = [40, 70, 100];
+
+  cutoffs.forEach((cutoff) => {
+    const genuine = perms.find((p) => p.cutoff === cutoff && p.trial_type === "genuine");
+    const nulls = perms.filter((p) => p.cutoff === cutoff && p.trial_type === "randomized_null");
+
+    if (!genuine || nulls.length === 0) return;
+
+    const nullAurocs = nulls.map((n) => n.auroc);
+    const nullBriers = nulls.map((n) => n.brier_score);
+
+    const meanNullAuc = nullAurocs.reduce((a, b) => a + b, 0) / nullAurocs.length;
+    const stdNullAuc = Math.sqrt(nullAurocs.reduce((a, b) => a + Math.pow(b - meanNullAuc, 2), 0) / nullAurocs.length);
+    const meanNullBrier = nullBriers.reduce((a, b) => a + b, 0) / nullBriers.length;
+    const pVal = nullAurocs.filter((a) => a >= genuine.auroc).length / nullAurocs.length;
+
+    const tr = document.createElement("tr");
+    const sigBadge = pVal < 0.05
+      ? `<span class="badge badge-success">p = ${pVal.toFixed(4)} (Sig. Non-Random)</span>`
+      : `<span class="badge badge-outline">p = ${pVal.toFixed(4)} (Permutation Parity)</span>`;
+
+    tr.innerHTML = `
+      <td><strong>Cutoff ${cutoff}</strong></td>
+      <td><strong>${genuine.auroc.toFixed(4)}</strong></td>
+      <td>${meanNullAuc.toFixed(4)} &plusmn; ${stdNullAuc.toFixed(4)}</td>
+      <td>${sigBadge}</td>
+      <td><strong>${genuine.brier_score.toFixed(4)}</strong></td>
+      <td>${meanNullBrier.toFixed(4)}</td>
+      <td>${pVal < 0.05 ? "Peer trajectory signal statistically exceeds randomized pairings" : "Empirical null reaches parity with genuine model"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/**
+ * Renders the Selective Prediction Risk-Coverage Trade-Off Table.
+ */
+function renderSelectivePredictionTable(records) {
+  const tbody = document.getElementById("selective-pred-tbody");
+  if (!tbody || !records) return;
+  tbody.innerHTML = "";
+
+  const fmt = (val) => (val !== null && val !== undefined && !isNaN(val) ? (typeof val === "number" ? val.toFixed(4) : val) : "--");
+
+  records.forEach((r) => {
+    const tr = document.createElement("tr");
+    if (r.target_coverage === 0.95) {
+      tr.style.backgroundColor = "rgba(16, 185, 129, 0.08)";
+    }
+    tr.innerHTML = `
+      <td><strong>Cutoff ${r.cutoff}</strong></td>
+      <td><span class="code-badge">${r.selection_mechanism}</span></td>
+      <td>${(r.target_coverage * 100).toFixed(0)}%</td>
+      <td>${fmt(r.training_tau)}</td>
+      <td><strong>${(r.realized_test_coverage * 100).toFixed(1)}%</strong> (${r.n_retained_test}/${r.n_total_test})</td>
+      <td>${fmt(r.retained_auroc)}</td>
+      <td><strong>${fmt(r.retained_brier_score)}</strong></td>
+      <td>${r.retained_accuracy ? (r.retained_accuracy * 100).toFixed(1) + "%" : "--"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/**
+ * Sets up Hardware Cycler CSV Ingestion, Drag-and-Drop, Sample Loaders, and Real-time Auditing.
+ */
+function setupHardwareValidation() {
+  const fileInput = document.getElementById("hw-file-input");
+  const dropzone = document.getElementById("hw-upload-dropzone");
+  const textarea = document.getElementById("hw-csv-textarea");
+  const btnValid = document.getElementById("btn-hw-load-valid");
+  const btnCorrupt = document.getElementById("btn-hw-load-corrupt");
+  const btnValidate = document.getElementById("btn-hw-execute-validate");
+
+  // Sample CSVs
+  const validSampleCsv = [
+    "Cycle_Index,Discharge_Capacity_Ah,Internal_Resistance_Ohm,Temperature_Max_C,Charge_Time_Min",
+    ...Array.from({ length: 45 }, (_, i) => {
+      const cyc = i + 1;
+      const q = (1.065 - 0.00015 * cyc).toFixed(4);
+      const ir = (0.0152 + 0.00002 * cyc).toFixed(4);
+      const temp = (31.2 + 0.05 * Math.sin(cyc)).toFixed(1);
+      const tc = (42.5 + 0.02 * cyc).toFixed(1);
+      return `${cyc},${q},${ir},${temp},${tc}`;
+    }),
+  ].join("\n");
+
+  const corruptSampleCsv = [
+    "Cycle_Index,Discharge_Capacity_Ah,Internal_Resistance_Ohm,Temperature_Max_C,Charge_Time_Min",
+    "1,1.065,0.0152,31.2,42.5",
+    "2,1.064,0.0153,31.3,42.5",
+    "5,3.250,0.0154,31.4,42.6", // Non-monotonic cycle step (1, 2, 5) & capacity out of bounds (3.25 Ah > 2.5 Ah)
+    "3,0.120,-0.0050,95.0,42.8", // Negative IR & temperature runaway (95°C > 80°C)
+    "6,1.061,0.0156,31.5,42.7",
+  ].join("\n");
+
+  if (btnValid) {
+    btnValid.addEventListener("click", () => {
+      textarea.value = validSampleCsv;
+      executeHardwareValidation(validSampleCsv);
+    });
+  }
+
+  if (btnCorrupt) {
+    btnCorrupt.addEventListener("click", () => {
+      textarea.value = corruptSampleCsv;
+      executeHardwareValidation(corruptSampleCsv);
+    });
+  }
+
+  if (btnValidate) {
+    btnValidate.addEventListener("click", () => {
+      const text = textarea.value.trim();
+      if (!text) {
+        alert("Please paste or upload CSV telemetry data to audit.");
+        return;
+      }
+      executeHardwareValidation(text);
+    });
+  }
+
+  // File dropzone events
+  if (dropzone && fileInput) {
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        readFileContent(file);
+      }
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        readFileContent(e.target.files[0]);
+      }
+    });
+  }
+
+  function readFileContent(file) {
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      textarea.value = evt.target.result;
+      executeHardwareValidation(evt.target.result);
+    };
+    reader.readAsText(file);
+  }
+}
+
+/**
+ * Executes hardware CSV validation via backend POST endpoint.
+ */
+async function executeHardwareValidation(csvContent) {
+  const resultWrap = document.getElementById("hw-audit-result-wrap");
+  const verdictBadge = document.getElementById("hw-audit-verdict-badge");
+  const summaryText = document.getElementById("hw-audit-summary-text");
+  const errorsWrap = document.getElementById("hw-audit-errors-wrap");
+  const errorsList = document.getElementById("hw-audit-errors-list");
+  const previewWrap = document.getElementById("hw-audit-preview-wrap");
+  const sampleTbody = document.getElementById("hw-audit-sample-tbody");
 
   try {
-    const res = await fetch(`/api/compare?ids=${idsParam}&metric=${metric}&cutoff=${cutoffParam}`);
-    if (!res.ok) throw new Error("Failed to load comparison data.");
+    const res = await fetch("/api/hardware/validate", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: csvContent,
+    });
+
     const data = await res.json();
+    resultWrap.style.display = "block";
+
+    if (data.is_valid || data.valid) {
+      verdictBadge.innerHTML = `<span class="badge badge-success">VALIDATED FOR INGESTION</span>`;
+      summaryText.textContent = `✓ ${data.message} Schema detected: ${data.schema_detected}. Ingestion buffer ready.`;
+      errorsWrap.style.display = "none";
+    } else {
+      verdictBadge.innerHTML = `<span class="badge badge-danger">REJECTED — INTEGRITY ERRORS</span>`;
+      summaryText.textContent = `⚠️ ${data.message}`;
+
+      // Populate error list
+      errorsWrap.style.display = "block";
+      errorsList.innerHTML = "";
+      (data.errors || data.anomalies || []).forEach((err) => {
+        const li = document.createElement("li");
+        li.textContent = err;
+        errorsList.appendChild(li);
+      });
+    }
+
+    // Populate sample rows
+    if (data.sample_rows && data.sample_rows.length > 0) {
+      previewWrap.style.display = "block";
+      sampleTbody.innerHTML = "";
+      data.sample_rows.forEach((r) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>${r.cycle}</strong></td>
+          <td>${r.capacity_ah !== undefined ? r.capacity_ah.toFixed(4) : (r.voltage !== undefined ? r.voltage.toFixed(3) + "V" : "--")}</td>
+          <td>${r.ir_ohm !== undefined ? r.ir_ohm.toFixed(4) : (r.current !== undefined ? r.current.toFixed(2) + "A" : "--")}</td>
+          <td>${r.temperature_c !== undefined ? r.temperature_c.toFixed(1) : (r.temperature !== undefined ? r.temperature.toFixed(1) : "--")}</td>
+          <td>${r.charge_time_min !== undefined ? r.charge_time_min.toFixed(1) : "--"}</td>
+        `;
+        sampleTbody.appendChild(tr);
+      });
+    } else {
+      previewWrap.style.display = "none";
+    }
+
+  } catch (err) {
+    console.error("Hardware validation error:", err);
+    alert("Could not complete hardware telemetry validation. Ensure server is active.");
+  }
+}
+
+/**
+ * Updates the multi-cell comparison chart.
+ */
+async function updateComparisonChart() {
+  const ctx = document.getElementById("comparison-chart").getContext("2d");
+  const metric = state.comparisonMetric;
+  const metaInfo = METRIC_META[metric];
+  renderCompareChips();
+
+  try {
+    const promises = state.comparisonCells.map(async (cid) => {
+      const res = await fetch(`/api/battery?id=${cid}&cutoff=${state.currentCutoff}`);
+      if (!res.ok) return null;
+      return res.json();
+    });
+
+    const batteries = (await Promise.all(promises)).filter(Boolean);
 
     if (state.comparisonChart) {
       state.comparisonChart.destroy();
     }
 
-    const datasets = data.series.map((s, idx) => ({
-      label: `${s.cell_id} (${s.batch}, EOL: ${s.benchmark_cycle_life || "?"} cyc)`,
-      data: s.points,
-      borderColor: PALETTE[idx % PALETTE.length],
-      backgroundColor: "transparent",
-      borderWidth: 2,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      tension: 0.1,
-    }));
+    const datasets = batteries.map((b, idx) => {
+      const color = PALETTE[idx % PALETTE.length];
+      return {
+        label: `${b.metadata.cell_id} (${b.metadata.policy})`,
+        data: b.cycles.map((c) => ({ x: c.cycle, y: c[metric] })).filter((p) => p.y !== null && p.y !== undefined),
+        borderColor: color,
+        backgroundColor: "transparent",
+        borderWidth: b.metadata.cell_id === state.currentBatteryId ? 3 : 1.5,
+        borderDash: b.metadata.cell_id === state.currentBatteryId ? [] : [3, 3],
+        pointRadius: 0,
+        tension: 0.1,
+      };
+    });
 
     state.comparisonChart = new Chart(ctx, {
       type: "line",
@@ -973,17 +1548,19 @@ async function updateComparisonChart() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 250 },
-        interaction: { mode: "nearest", intersect: false },
+        animation: { duration: 300 },
         plugins: {
-          legend: { position: "top", labels: { color: "#94a3b8", font: { size: 11 } } },
+          legend: {
+            display: true,
+            labels: { color: "#94a3b8", font: { size: 11 }, boxWidth: 12 },
+          },
           tooltip: {
-            backgroundColor: "#0f172a",
-            titleColor: "#38bdf8",
-            bodyColor: "#f8fafc",
+            backgroundColor: "#162035",
+            borderColor: "#23314d",
+            borderWidth: 1,
             callbacks: {
               title: (items) => `Cycle ${items[0].parsed.x}`,
-              label: (item) => `${item.dataset.label}: ${item.parsed.y.toFixed(4)} Ah`,
+              label: (item) => `${item.dataset.label}: ${item.parsed.y.toFixed(4)} ${metaInfo.unit}`,
             },
           },
         },
@@ -995,7 +1572,7 @@ async function updateComparisonChart() {
             ticks: { color: "#94a3b8" },
           },
           y: {
-            title: { display: true, text: "Discharge Capacity (Ah)", color: "#94a3b8" },
+            title: { display: true, text: `${metaInfo.label} (${metaInfo.unit})`, color: "#94a3b8" },
             grid: { color: "rgba(255, 255, 255, 0.05)" },
             ticks: { color: "#94a3b8" },
           },
@@ -1013,6 +1590,7 @@ async function updateComparisonChart() {
  */
 function renderCompareChips() {
   const container = document.getElementById("compare-pills-list");
+  if (!container) return;
   container.innerHTML = "";
 
   state.comparisonCells.forEach((cid) => {

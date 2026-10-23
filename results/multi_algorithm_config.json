@@ -1,0 +1,67 @@
+{
+  "algorithms": [
+    "logistic_regression",
+    "random_forest",
+    "rbf_svm",
+    "hist_gradient_boosting"
+  ],
+  "algorithm_metadata": {
+    "logistic_regression": {
+      "name": "Standardized Logistic Regression",
+      "family": "Linear",
+      "description": "Baseline linear classifier with L2 regularization and Platt probability calibration.",
+      "params": {
+        "C": 1.0,
+        "solver": "lbfgs",
+        "class_weight": "balanced"
+      }
+    },
+    "random_forest": {
+      "name": "Random Forest Ensemble",
+      "family": "Tree Ensemble",
+      "description": "Nonlinear bagging ensemble with 100 shallow decision trees.",
+      "params": {
+        "n_estimators": 100,
+        "max_depth": 5,
+        "min_samples_split": 4,
+        "class_weight": "balanced"
+      }
+    },
+    "rbf_svm": {
+      "name": "RBF Support Vector Machine",
+      "family": "Kernel Method",
+      "description": "Radial basis function kernel SVM with training-only Platt scaling.",
+      "params": {
+        "C": 1.0,
+        "kernel": "rbf",
+        "gamma": "scale",
+        "class_weight": "balanced"
+      }
+    },
+    "hist_gradient_boosting": {
+      "name": "Histogram Gradient Boosting",
+      "family": "Boosting",
+      "description": "Lightweight gradient boosted decision trees with histogram binning.",
+      "params": {
+        "max_iter": 100,
+        "max_depth": 3,
+        "learning_rate": 0.05,
+        "class_weight": "balanced"
+      }
+    }
+  },
+  "cutoffs": [
+    40,
+    70,
+    100
+  ],
+  "primary_target": "target_fail_within_500",
+  "random_seed": 42,
+  "validation_protocol": "5_fold_stratified_cv_train_only",
+  "threshold_selection": "Youden_J_on_train_cv",
+  "calibration": "Platt_scaling_on_train_cv",
+  "system_info": {
+    "python_version": "3.11.9",
+    "platform": "Windows-10-10.0.26300-SP0"
+  }
+}
