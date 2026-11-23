@@ -1,0 +1,41 @@
+[
+  {
+    "algorithm": "tabpfn_2_5",
+    "name": "TabPFN 2.5",
+    "family": "Foundation Model / PFN",
+    "mean_primary_auroc": 0.9729162745467091,
+    "mean_primary_brier": 0.0683662851030628,
+    "mean_primary_f1": 0.9396365365028637,
+    "mean_secondary_auroc": 0.9743589743589743,
+    "mean_secondary_brier": 0.07142041390761733,
+    "m4_cutoff70_auroc": 1.0,
+    "m4_cutoff70_brier": 0.04985818639397621,
+    "rank": 1
+  },
+  {
+    "algorithm": "rbf_svm",
+    "name": "RBF Support Vector Machine",
+    "family": "Kernel Method",
+    "mean_primary_auroc": 0.9691166321601102,
+    "mean_primary_brier": 0.0687708575430592,
+    "mean_primary_f1": 0.9152946393147495,
+    "mean_secondary_auroc": 0.9166666666666667,
+    "mean_secondary_brier": 0.1711778683651198,
+    "m4_cutoff70_auroc": 0.9913419913419913,
+    "m4_cutoff70_brier": 0.048770690721980405,
+    "rank": 2
+  },
+  {
+    "algorithm": "logistic_regression",
+    "name": "Standardized Logistic Regression",
+    "family": "Linear",
+    "mean_primary_auroc": 0.9071616789008092,
+    "mean_primary_brier": 0.07899736878023818,
+    "mean_primary_f1": 0.9143798021210192,
+    "mean_secondary_auroc": 0.858974358974359,
+    "mean_secondary_brier": 0.06353453284248504,
+    "m4_cutoff70_auroc": 0.9090909090909091,
+    "m4_cutoff70_brier": 0.06281250963878264,
+    "rank": 3
+  }
+]

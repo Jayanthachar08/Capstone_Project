@@ -236,6 +236,31 @@ class ModelFactory:
             ),
         ])
 
+    @staticmethod
+    def build_tabpfn_2_5(
+        n_estimators: int = 4,
+        device: str = "cpu",
+        random_state: int = 42,
+        **kwargs: Any,
+    ) -> Pipeline:
+        """Constructs a TabPFN 2.5 classification pipeline using synthetic-only default-2 checkpoint.
+
+        TabPFN performs internal quantile/power feature normalization and in-context learning.
+        """
+        from tabpfn import TabPFNClassifier
+        return Pipeline([
+            (
+                "classifier",
+                TabPFNClassifier(
+                    device=device,
+                    n_estimators=int(n_estimators),
+                    model_path="tabpfn-v2-classifier.ckpt",
+                    random_state=int(random_state),
+                    **kwargs,
+                ),
+            ),
+        ])
+
     @classmethod
     def build_pipeline(
         cls,
@@ -244,19 +269,21 @@ class ModelFactory:
         **kwargs,
     ) -> Pipeline:
         """Shared modular interface creating an ML pipeline for any supported algorithm."""
-        algo = algorithm.lower().replace("-", "_").replace(" ", "_")
-        if algo in ("logistic_regression", "lr"):
+        algo = algorithm.lower().replace("-", "_").replace(" ", "_").replace(".", "_")
+        if algo in ("logistic_regression", "lr", "logistic"):
             return cls.build_logistic_regression(random_state=random_state, **kwargs)
+        elif algo in ("rbf_svm", "svm", "svc", "rbf"):
+            return cls.build_rbf_svm(random_state=random_state, **kwargs)
+        elif algo in ("tabpfn_2_5", "tabpfn_2", "tabpfn", "tab_pfn"):
+            return cls.build_tabpfn_2_5(random_state=random_state, **kwargs)
         elif algo in ("random_forest", "rf"):
             return cls.build_random_forest(random_state=random_state, **kwargs)
-        elif algo in ("rbf_svm", "svm", "svc"):
-            return cls.build_rbf_svm(random_state=random_state, **kwargs)
         elif algo in ("hist_gradient_boosting", "gradient_boosting", "hgb", "gbm"):
             return cls.build_hist_gradient_boosting(random_state=random_state, **kwargs)
         else:
             raise ValueError(
                 f"Unsupported algorithm '{algorithm}'. Supported: "
-                "['logistic_regression', 'random_forest', 'rbf_svm', 'hist_gradient_boosting']"
+                "['logistic_regression', 'rbf_svm', 'tabpfn_2_5']"
             )
 
 
@@ -264,25 +291,19 @@ SUPPORTED_ALGORITHMS: Dict[str, Dict[str, Any]] = {
     "logistic_regression": {
         "name": "Standardized Logistic Regression",
         "family": "Linear",
-        "description": "Baseline linear classifier with L2 regularization and Platt probability calibration.",
+        "description": "Baseline linear classifier with StandardScaler, L2 regularization, and Platt probability calibration.",
         "params": {"C": 1.0, "solver": "lbfgs", "class_weight": "balanced"},
-    },
-    "random_forest": {
-        "name": "Random Forest Ensemble",
-        "family": "Tree Ensemble",
-        "description": "Nonlinear bagging ensemble with 100 shallow decision trees.",
-        "params": {"n_estimators": 100, "max_depth": 5, "min_samples_split": 4, "class_weight": "balanced"},
     },
     "rbf_svm": {
         "name": "RBF Support Vector Machine",
         "family": "Kernel Method",
-        "description": "Radial basis function kernel SVM with training-only Platt scaling.",
+        "description": "Nonlinear radial basis function kernel SVM with StandardScaler and Platt probability scaling.",
         "params": {"C": 1.0, "kernel": "rbf", "gamma": "scale", "class_weight": "balanced"},
     },
-    "hist_gradient_boosting": {
-        "name": "Histogram Gradient Boosting",
-        "family": "Boosting",
-        "description": "Lightweight gradient boosted decision trees with histogram binning.",
-        "params": {"max_iter": 100, "max_depth": 3, "learning_rate": 0.05, "class_weight": "balanced"},
+    "tabpfn_2_5": {
+        "name": "TabPFN 2.5",
+        "family": "Foundation Model / PFN",
+        "description": "Prior-Data Fitted Network transformer foundation model for tabular classification with synthetic default-2 checkpoint.",
+        "params": {"n_estimators": 4, "device": "cpu", "model_path": "tabpfn-v2-classifier.ckpt"},
     },
 }

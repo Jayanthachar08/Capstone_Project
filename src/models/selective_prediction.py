@@ -38,18 +38,15 @@ class SelectivePredictionEvaluator:
     def __init__(
         self,
         predictions_csv: str = "results/phase5_predictions.csv",
-        m5_predictions_csv: str = "results/m5_predictions.csv",
         results_dir: str = "results",
     ):
         self.predictions_csv = Path(predictions_csv)
-        self.m5_predictions_csv = Path(m5_predictions_csv)
         self.results_dir = Path(results_dir)
 
     def run(self) -> pd.DataFrame:
         """Runs selective prediction analysis across cutoffs and coverage levels."""
-        logger.info("Loading predictions from %s and %s...", self.predictions_csv, self.m5_predictions_csv)
+        logger.info("Loading predictions from %s...", self.predictions_csv)
         df_p5 = pd.read_csv(self.predictions_csv)
-        df_m5 = pd.read_csv(self.m5_predictions_csv) if self.m5_predictions_csv.exists() else None
 
         records: List[Dict[str, Any]] = []
 
@@ -58,16 +55,10 @@ class SelectivePredictionEvaluator:
             train_sub = sub[sub["benchmark_partition"] == "train"].copy()
             test_sub = sub[sub["benchmark_partition"] == "primary_test"].copy()
 
-            if df_m5 is not None:
-                sub_m5 = df_m5[df_m5["cutoff"] == cutoff].copy()
-                train_m5 = sub_m5[sub_m5["benchmark_partition"] == "train"].copy()
-                test_m5 = sub_m5[sub_m5["benchmark_partition"] == "primary_test"].copy()
-            else:
-                train_m5, test_m5 = None, None
-
-            # Strategy 1: PMRI-Based Selection
+            # Strategy: PMRI-Based Selection (Confidence-Gated M4 Prediction)
             for cov_target in TARGET_COVERAGES:
                 percentile_q = (1.0 - cov_target) * 100.0
+
                 # Determine threshold strictly on training partition
                 tau_pmri = float(np.percentile(train_sub["pmri"], percentile_q))
 
@@ -103,44 +94,6 @@ class SelectivePredictionEvaluator:
                     "retained_accuracy": acc,
                     "retained_f1": f1,
                 })
-
-            # Strategy 2: M5 Adaptive Trust-Based Selection (if M5 exists)
-            if train_m5 is not None and "trust_score_T" in train_m5.columns:
-                for cov_target in TARGET_COVERAGES:
-                    percentile_q = (1.0 - cov_target) * 100.0
-                    tau_trust = float(np.percentile(train_m5["trust_score_T"], percentile_q))
-
-                    retained_mask = test_m5["trust_score_T"] >= tau_trust
-                    n_retained = int(retained_mask.sum())
-                    realized_cov = n_retained / len(test_m5)
-
-                    if n_retained >= 5 and test_m5.loc[retained_mask, "ground_truth"].nunique() > 1:
-                        y_ret = test_m5.loc[retained_mask, "ground_truth"].values
-                        p_ret = test_m5.loc[retained_mask, "prob_M5"].values
-                        pred_class = (p_ret >= 0.5).astype(float)
-
-                        brier = float(brier_score_loss(y_ret, p_ret))
-                        mae = float(np.mean(np.abs(y_ret - p_ret)))
-                        auc = float(roc_auc_score(y_ret, p_ret))
-                        acc = float(accuracy_score(y_ret, pred_class))
-                        f1 = float(f1_score(y_ret, pred_class, zero_division=0))
-                    else:
-                        brier, mae, auc, acc, f1 = np.nan, np.nan, np.nan, np.nan, np.nan
-
-                    records.append({
-                        "cutoff": cutoff,
-                        "selection_mechanism": "m5_trust_threshold",
-                        "target_coverage": cov_target,
-                        "training_tau": tau_trust,
-                        "n_total_test": len(test_m5),
-                        "n_retained_test": n_retained,
-                        "realized_test_coverage": realized_cov,
-                        "retained_brier_score": brier,
-                        "retained_mae": mae,
-                        "retained_auroc": auc,
-                        "retained_accuracy": acc,
-                        "retained_f1": f1,
-                    })
 
         df_curve = pd.DataFrame(records)
         out_csv = self.results_dir / "selective_prediction_curve.csv"

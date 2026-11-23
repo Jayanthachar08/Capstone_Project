@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Battery Degradation Screening | Capstone Research Dashboard</title>
+  <title>Battery Health Intelligence | Capstone Research Dashboard</title>
   <link rel="stylesheet" href="styles.css">
   <!-- Chart.js local bundle with CDN fallback -->
   <script src="assets/chart.umd.min.js"></script>
@@ -14,729 +14,1567 @@
   </script>
 </head>
 <body>
-  <!-- Top Navigation & Header -->
-  <header class="app-header">
-    <div class="header-container">
-      <div class="brand-group">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <div class="app-shell">
+
+    <!-- ====================================================================
+         1. Left Sidebar Navigation
+         ==================================================================== -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="7" width="16" height="10" rx="2" ry="2"></rect>
             <line x1="22" y1="11" x2="22" y2="13"></line>
             <line x1="6" y1="11" x2="6" y2="13"></line>
             <line x1="10" y1="11" x2="10" y2="13"></line>
           </svg>
         </div>
-        <div class="brand-text">
-          <div class="title-row">
-            <h1>Battery Degradation Screening</h1>
-            <span class="badge badge-accent">Capstone Research Prototype</span>
-            <span class="badge badge-outline">B.Tech CSE Capstone</span>
-          </div>
-          <p class="subtitle">Confidence-Aware Peer-Relative Analysis for Early End-of-Life Risk Prediction in Lithium-Ion Batteries</p>
-          <p class="header-desc">Analyze battery aging, compare degradation patterns, and develop early end-of-life risk screening on the MATR / Severson et al. benchmark dataset.</p>
+        <div class="brand-info">
+          <span class="brand-title">Battery Intelligence</span>
+          <span class="brand-subtitle">B.Tech CSE Capstone</span>
         </div>
       </div>
-      <div class="header-stats">
-        <div class="stat-pill">
-          <span class="stat-num" id="stat-total-cells">140</span>
-          <span class="stat-lbl">Total Cells</span>
-        </div>
-        <div class="stat-pill">
-          <span class="stat-num text-teal" id="stat-eligible-cells">124</span>
-          <span class="stat-lbl">Eligible Benchmark</span>
-        </div>
-        <div class="stat-pill">
-          <span class="stat-num text-amber" id="stat-excluded-cells">16</span>
-          <span class="stat-lbl">Excluded Channels</span>
-        </div>
-        <div class="stat-pill">
-          <span class="stat-num text-cyan" id="stat-models-count">4</span>
-          <span class="stat-lbl">Models (M1–M4)</span>
-        </div>
-        <div class="stat-pill">
-          <span class="stat-num text-emerald" id="stat-predictions-count">372</span>
-          <span class="stat-lbl">Predictions</span>
-        </div>
-      </div>
-    </div>
-  </header>
 
-  <!-- Main Container -->
-  <main class="main-container">
-    
-    <!-- Controls Bar -->
-    <section class="controls-card">
-      <div class="controls-grid">
-        <div class="control-group">
-          <label for="battery-select">Select Target Battery:</label>
-          <div class="select-wrapper">
-            <select id="battery-select" class="form-control">
-              <option value="">Loading battery database...</option>
+      <div class="sidebar-content">
+        <!-- Navigation Group: Monitoring & Exploration -->
+        <div class="sidebar-nav-group">
+          <div class="sidebar-group-label">Monitoring &amp; Data</div>
+          <button class="nav-item active" data-view="overview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+            <span>Overview</span>
+          </button>
+
+          <button class="nav-item" data-view="explorer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>Battery Explorer</span>
+            <span class="nav-badge" id="badge-explorer-count">140</span>
+          </button>
+
+          <button class="nav-item" data-view="detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span>Trajectory Analysis</span>
+          </button>
+
+          <button class="nav-item" data-view="peers">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Peer Comparison</span>
+          </button>
+        </div>
+
+        <!-- Navigation Group: Machine Learning & Risk -->
+        <div class="sidebar-nav-group">
+          <div class="sidebar-group-label">Machine Learning &amp; Risk</div>
+          <button class="nav-item" data-view="risk">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>EOL Risk Prediction</span>
+            <span class="nav-badge">M1–M4</span>
+          </button>
+
+          <button class="nav-item" data-view="evaluation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            <span>Model Evaluation</span>
+          </button>
+
+          <button class="nav-item" data-view="benchmarks">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            <span>Algorithm Benchmarks</span>
+            <span class="nav-badge" style="background: rgba(0, 111, 238, 0.15); color: var(--heroui-primary);">3 Algos</span>
+          </button>
+
+          <button class="nav-item" data-view="pmri">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+            </svg>
+            <span>PMRI &amp; Confidence</span>
+          </button>
+        </div>
+
+        <!-- Navigation Group: Research & Laboratory -->
+        <div class="sidebar-nav-group">
+          <div class="sidebar-group-label">Research &amp; Hardware</div>
+          <button class="nav-item" data-view="methodology">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            <span>Research Insights</span>
+          </button>
+
+          <button class="nav-item" data-view="hardware">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+              <rect x="9" y="9" width="6" height="6"></rect>
+              <line x1="9" y1="1" x2="9" y2="4"></line>
+              <line x1="15" y1="1" x2="15" y2="4"></line>
+              <line x1="9" y1="20" x2="9" y2="23"></line>
+              <line x1="15" y1="20" x2="15" y2="23"></line>
+              <line x1="20" y1="9" x2="23" y2="9"></line>
+              <line x1="20" y1="14" x2="23" y2="14"></line>
+              <line x1="1" y1="9" x2="4" y2="9"></line>
+              <line x1="1" y1="14" x2="4" y2="14"></line>
+            </svg>
+            <span>Hardware Validation</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-status-pill">
+          <span class="status-dot"></span>
+          <span>Leak-Free Protocol Verified</span>
+        </div>
+        <div>124 Benchmark Eligible | 16 Excluded</div>
+      </div>
+    </aside>
+
+    <!-- ====================================================================
+         2. Main Application Area & Sticky Top Bar
+         ==================================================================== -->
+    <div class="app-main">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu-btn" id="sidebar-toggle" aria-label="Toggle navigation menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="topbar-breadcrumbs">
+            <span class="topbar-crumb-root">Battery Intelligence</span>
+            <span class="topbar-crumb-sep">/</span>
+            <span class="topbar-crumb-current" id="topbar-crumb-current">Overview</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="topbar-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="global-battery-search" placeholder="Jump to battery ID (e.g. b1c0)..." autocomplete="off" />
+          </div>
+
+          <div class="topbar-algo-box" style="display: flex; align-items: center; gap: 8px;">
+            <label for="global-algorithm-selector" class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;">Active ML:</label>
+            <select id="global-algorithm-selector" class="heroui-select" style="min-width: 175px; height: 34px; font-size: 12px; font-weight: 600; padding: 4px 10px;">
+              <option value="logistic_regression">Logistic Regression (L2)</option>
+              <option value="rbf_svm">RBF-SVM (Nonlinear)</option>
+              <option value="tabpfn_2_5">TabPFN 2.5 (Foundation)</option>
             </select>
           </div>
-        </div>
 
-        <div class="control-group">
-          <label>Early-Life Observation Cutoff:</label>
-          <div class="cutoff-pills" role="radiogroup" id="cutoff-selector">
-            <button class="pill-btn" data-cutoff="40">40 Cycles</button>
-            <button class="pill-btn" data-cutoff="70">70 Cycles</button>
-            <button class="pill-btn active" data-cutoff="100">100 Cycles</button>
-            <button class="pill-btn" data-cutoff="all">Full Lifecycle</button>
+          <div class="topbar-badge">
+            <span class="dot"></span>
+            <span id="stat-eligible-cells-top">124</span> Eligible
           </div>
-        </div>
 
-        <div class="control-group">
-          <label>Selected ML Model:</label>
-          <div class="model-pills" role="radiogroup" id="model-selector">
-            <button class="pill-btn" data-model="M1" title="M1: Condition Baseline (Initial & Snapshot, 18 features)">M1</button>
-            <button class="pill-btn" data-model="M2" title="M2: Individual Trajectory (+Slopes & Curvature, 34 features)">M2</button>
-            <button class="pill-btn" data-model="M3" title="M3: Peer-Relative (+Deviations from Matched Peers, 42 features)">M3</button>
-            <button class="pill-btn active" data-model="M4" title="M4: Confidence-Aware (+PMRI Reliability, 46 features)">M4 (Proposed)</button>
+          <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle Light / Dark mode" aria-label="Toggle theme">
+            <!-- Sun Icon (for dark mode) -->
+            <svg id="theme-icon-sun" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <!-- Moon Icon (for light mode) -->
+            <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="workspace">
+
+        <!-- ==================================================================
+             VIEW 1: OVERVIEW DASHBOARD
+             ================================================================== -->
+        <section class="view-panel active" id="view-overview">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Battery Health Intelligence</h2>
+              <p>Early degradation screening, peer-relative trajectory analysis, and End-of-Life (EOL) risk estimation using the Severson et al. benchmark dataset.</p>
+            </div>
+            <div class="view-actions">
+              <button class="heroui-btn btn-flat" onclick="switchView('explorer')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <span>Explore Batteries</span>
+              </button>
+              <button class="heroui-btn btn-primary" onclick="switchView('detail')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                <span>Analyze Trajectories</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div class="control-group metadata-preview" id="cell-meta-strip">
-          <div class="meta-item">
-            <span class="meta-label">Batch:</span>
-            <span class="meta-val" id="meta-batch">-</span>
+          <!-- KPI Cards Row -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Total Raw Cells</span>
+                <div class="kpi-icon-wrap" style="background: var(--heroui-primary-50); color: var(--heroui-primary);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="16" height="10" rx="2"></rect><line x1="22" y1="11" x2="22" y2="13"></line></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="stat-total-cells">140</div>
+              <div class="kpi-subtext">Across 3 commercial test batches</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Benchmark Eligible</span>
+                <div class="kpi-icon-wrap" style="background: var(--heroui-success-50); color: var(--heroui-success);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+              </div>
+              <div class="kpi-value text-success" id="stat-eligible-cells">124</div>
+              <div class="kpi-subtext">Validated cycle histories</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Excluded Channels</span>
+                <div class="kpi-icon-wrap" style="background: var(--heroui-warning-50); color: var(--heroui-warning);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                </div>
+              </div>
+              <div class="kpi-value text-warning" id="stat-excluded-cells">16</div>
+              <div class="kpi-subtext">Hardware / cycler anomalies</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Observation Cutoffs</span>
+                <div class="kpi-icon-wrap" style="background: var(--heroui-secondary-50); color: var(--heroui-secondary);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </div>
+              </div>
+              <div class="kpi-value">40 / 70 / 100</div>
+              <div class="kpi-subtext">Cycles early observation</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Core Models</span>
+                <div class="kpi-icon-wrap" style="background: var(--heroui-primary-50); color: var(--heroui-primary);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+              </div>
+              <div class="kpi-value text-primary" id="stat-models-count">4</div>
+              <div class="kpi-subtext">M1–M4 (Proposed Model: M4)</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Evaluations</span>
+                <div class="kpi-icon-wrap" style="background: var(--heroui-success-50); color: var(--heroui-success);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+              </div>
+              <div class="kpi-value" id="stat-predictions-count">372</div>
+              <div class="kpi-subtext">124 cells &times; 3 observation cutoffs</div>
+            </div>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">Split Partition:</span>
-            <span class="meta-val" id="meta-partition">-</span>
+
+          <!-- Cohort Analytics & System Overview Grid -->
+          <div class="grid-2col">
+            <div class="heroui-card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                    <span>Battery Cohort Lifecycle Degradation</span>
+                  </div>
+                  <span class="card-subtitle">Representative capacity fade curves across fast-charging protocols</span>
+                </div>
+                <button class="heroui-btn btn-bordered btn-sm" onclick="switchView('detail')">Detailed Curves &rarr;</button>
+              </div>
+              <div class="chart-container-large" style="height: 300px;">
+                <canvas id="overview-cohort-chart"></canvas>
+              </div>
+            </div>
+
+            <div class="heroui-card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Target Definition &amp; Partitions</span>
+                  </div>
+                  <span class="card-subtitle">Leak-free experimental protocol specifications</span>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--heroui-divider); padding-bottom: 8px;">
+                  <span class="text-muted">Primary Prediction Target</span>
+                  <span class="font-semibold text-danger">EOL &le; 550 Cycles</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--heroui-divider); padding-bottom: 8px;">
+                  <span class="text-muted">Training Reference Cohort</span>
+                  <span class="font-semibold">84 Cells (Batches 1 &amp; 2)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--heroui-divider); padding-bottom: 8px;">
+                  <span class="text-muted">Primary Test Cohort</span>
+                  <span class="font-semibold">40 Cells (Batch 3)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--heroui-divider); padding-bottom: 8px;">
+                  <span class="text-muted">Peer Matching Reference Pool</span>
+                  <span class="font-semibold text-primary">Training Set Only (k=5)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span class="text-muted">Anti-Leakage Verification</span>
+                  <span class="heroui-chip chip-success"><span class="chip-dot"></span> 8 Strict Invariants Passed</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">Charging Protocol:</span>
-            <span class="meta-val" id="meta-policy">-</span>
+
+          <!-- Featured Batteries Table -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  <span>Benchmark Batteries Overview</span>
+                </div>
+                <span class="card-subtitle">Select any battery to launch instant trajectory and peer risk screening</span>
+              </div>
+              <button class="heroui-btn btn-flat btn-sm" onclick="switchView('explorer')">Open Battery Explorer &rarr;</button>
+            </div>
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Cell ID</th>
+                    <th>Batch</th>
+                    <th>Charging Policy</th>
+                    <th>Actual Life</th>
+                    <th>EOL Horizon (&le; 550)</th>
+                    <th>M4 Risk (100 Cyc)</th>
+                    <th>PMRI Reliability</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-featured-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div class="meta-item">
-            <span class="meta-label">Cohort Elevated Risk:</span>
-            <span class="meta-val text-amber" id="meta-risk-tally">-</span>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 2: BATTERY EXPLORER
+             ================================================================== -->
+        <section class="view-panel" id="view-explorer">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Battery Explorer</h2>
+              <p>Filter, sort, and inspect all 140 battery cells across batches, charging policies, and benchmark partitions.</p>
+            </div>
           </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- Summary Metrics Cards -->
-    <section class="summary-grid" id="summary-cards">
-      <div class="metric-card">
-        <div class="card-icon icon-cyan">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        </div>
-        <div class="card-content">
-          <div class="metric-label">Selected Battery ID</div>
-          <div class="metric-value" id="card-cell-id">--</div>
-          <div class="metric-sub" id="card-cell-status">Loading...</div>
-        </div>
-      </div>
+          <!-- Explorer Filter Toolbar -->
+          <div class="explorer-toolbar">
+            <div class="toolbar-group">
+              <span class="toolbar-label">Search:</span>
+              <input type="text" id="explorer-search-input" class="heroui-input" placeholder="Search Cell ID..." style="width: 160px;" />
+            </div>
 
-      <div class="metric-card">
-        <div class="card-icon icon-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-        </div>
-        <div class="card-content">
-          <div class="metric-label">Observed Cycles</div>
-          <div class="metric-value"><span id="card-observed-cycles">--</span> <span class="unit">cyc</span></div>
-          <div class="metric-sub" id="card-total-cycles">of -- total recorded</div>
-        </div>
-      </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Batch:</span>
+              <select id="explorer-filter-batch" class="heroui-select">
+                <option value="all">All Batches</option>
+                <option value="2017-05-12">Batch 1 (2017-05-12)</option>
+                <option value="2017-06-30">Batch 2 (2017-06-30)</option>
+                <option value="2018-04-12">Batch 3 (2018-04-12)</option>
+              </select>
+            </div>
 
-      <div class="metric-card">
-        <div class="card-icon icon-teal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-        </div>
-        <div class="card-content">
-          <div class="metric-label">Discharge Capacity</div>
-          <div class="metric-value"><span id="card-latest-q">--</span> <span class="unit">Ah</span></div>
-          <div class="metric-sub" id="card-initial-q">Baseline (Cyc 2): -- Ah</div>
-        </div>
-      </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Partition:</span>
+              <select id="explorer-filter-split" class="heroui-select">
+                <option value="all">All Partitions</option>
+                <option value="train">Training (84 cells)</option>
+                <option value="primary_test">Primary Test (40 cells)</option>
+                <option value="excluded">Excluded Channels (16 cells)</option>
+              </select>
+            </div>
 
-      <div class="metric-card">
-        <div class="card-icon icon-emerald">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-        </div>
-        <div class="card-content">
-          <div class="metric-label">Capacity Retention</div>
-          <div class="metric-value" id="card-retention">--%</div>
-          <div class="metric-sub" id="card-fade-delta">Fade ΔQ: -- Ah</div>
-        </div>
-      </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Risk Class:</span>
+              <select id="explorer-filter-risk" class="heroui-select">
+                <option value="all">All Statuses</option>
+                <option value="elevated">Elevated Early Risk (&le; 550)</option>
+                <option value="normal">Normal / Extended Life</option>
+              </select>
+            </div>
 
-      <div class="metric-card">
-        <div class="card-icon icon-amber">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-        </div>
-        <div class="card-content">
-          <div class="metric-label">Internal Resistance (IR)</div>
-          <div class="metric-value"><span id="card-latest-ir">--</span> <span class="unit">Ω</span></div>
-          <div class="metric-sub" id="card-ir-growth">Change: --</div>
-        </div>
-      </div>
+            <button class="heroui-btn btn-light btn-sm" id="btn-reset-filters" style="margin-left: auto;">Reset Filters</button>
+          </div>
 
-      <div class="metric-card">
-        <div class="card-icon icon-rose">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>
-        </div>
-        <div class="card-content">
-          <div class="metric-label">Peak Temperature & Time</div>
-          <div class="metric-value"><span id="card-tmax">--</span> <span class="unit">°C</span></div>
-          <div class="metric-sub" id="card-chargetime">Charge time: -- min</div>
-        </div>
-      </div>
-    </section>
+          <!-- Explorer Table -->
+          <div class="heroui-card" style="padding: 0; overflow: hidden;">
+            <div class="heroui-table-container" style="border: none; border-radius: 0;">
+              <table class="heroui-table" id="explorer-table">
+                <thead>
+                  <tr>
+                    <th>Cell ID</th>
+                    <th>Batch</th>
+                    <th>Charging Policy</th>
+                    <th>Benchmark Partition</th>
+                    <th>Observed Cycles</th>
+                    <th>Actual Life</th>
+                    <th>Early EOL Status</th>
+                    <th>PMRI Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="explorer-table-body">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-    <!-- Data Integrity Note -->
-    <div class="callout callout-info">
-      <div class="callout-icon">ℹ️</div>
-      <div class="callout-text">
-        <strong>Data Calibration Protocol:</strong> In the MATR/Severson dataset, Cycle 1 was an unmonitored diagnostic/formation step with recorded discharge capacity of 0.0 Ah. All physical baseline measurements and trajectory fade rates are strictly computed starting from <strong>Cycle 2 onward</strong> to preserve physical validity.
-      </div>
+        <!-- ==================================================================
+             VIEW 3: BATTERY DETAIL & TRAJECTORY ANALYSIS
+             ================================================================== -->
+        <section class="view-panel" id="view-detail">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Battery Detail &amp; Trajectory Analysis</h2>
+              <p>Examine early-life degradation measurements, multi-metric sensor trajectories, and the 46 engineered features.</p>
+            </div>
+            <div class="view-actions">
+              <div class="toolbar-group">
+                <span class="toolbar-label">Select Cell:</span>
+                <select id="battery-select" class="heroui-select" style="min-width: 140px;"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Battery Summary Strip -->
+          <div class="battery-meta-strip" id="cell-meta-strip">
+            <div class="meta-pill">
+              <span class="meta-pill-label">Cell ID</span>
+              <span class="meta-pill-value font-mono" id="card-cell-id">b1c0</span>
+            </div>
+            <div class="meta-pill">
+              <span class="meta-pill-label">Batch</span>
+              <span class="meta-pill-value" id="meta-batch">2017-05-12</span>
+            </div>
+            <div class="meta-pill">
+              <span class="meta-pill-label">Charging Policy</span>
+              <span class="meta-pill-value" id="meta-policy">3.6C(80%)-4C</span>
+            </div>
+            <div class="meta-pill">
+              <span class="meta-pill-label">Partition</span>
+              <span class="meta-pill-value" id="meta-partition">Train (84 cells)</span>
+            </div>
+            <div class="meta-pill">
+              <span class="meta-pill-label">Benchmark Status</span>
+              <span class="heroui-chip chip-success" id="card-cell-status"><span class="chip-dot"></span> Eligible Benchmark</span>
+            </div>
+            <div class="meta-pill">
+              <span class="meta-pill-label">Actual Cycle Life</span>
+              <span class="meta-pill-value font-mono text-primary" id="val-target-eol">1852 Cycles</span>
+            </div>
+            <div class="meta-pill">
+              <span class="meta-pill-label">Early EOL Target (&le; 550)</span>
+              <span class="heroui-chip chip-neutral" id="val-target-500">Normal / Safe</span>
+            </div>
+          </div>
+
+          <!-- Trajectory Chart Card -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                  <span>Sensor Degradation Trajectory</span>
+                </div>
+                <span class="card-subtitle" id="mask-cutoff-label">Viewing Discharge Capacity (Ah) with early-life cutoff at Cycle 100</span>
+              </div>
+
+              <!-- Controls: Cutoffs & Metrics -->
+              <div class="chart-controls-bar">
+                <!-- Observation Cutoff Pills -->
+                <div class="heroui-tabs" id="cutoff-selector">
+                  <button class="heroui-tab" data-cutoff="40">40 Cycles</button>
+                  <button class="heroui-tab" data-cutoff="70">70 Cycles</button>
+                  <button class="heroui-tab active" data-cutoff="100">100 Cycles</button>
+                  <button class="heroui-tab" data-cutoff="all">Full Lifecycle</button>
+                </div>
+
+                <!-- Metric Selector Pills -->
+                <div class="heroui-tabs" id="metric-selector">
+                  <button class="heroui-tab active" data-metric="QDischarge">Capacity (Ah)</button>
+                  <button class="heroui-tab" data-metric="IR">Internal Resistance (&Omega;)</button>
+                  <button class="heroui-tab" data-metric="Tmax">Max Temp (&deg;C)</button>
+                  <button class="heroui-tab" data-metric="Tavg">Avg Temp (&deg;C)</button>
+                  <button class="heroui-tab" data-metric="chargetime">Charge Time (min)</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Trajectory Chart Canvas -->
+            <div class="chart-container-large">
+              <canvas id="trajectory-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Measured Degradation Summaries -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <span class="kpi-label">Initial Capacity ($Q_2$)</span>
+              <div class="kpi-value font-mono" id="card-initial-q">--</div>
+              <div class="kpi-subtext">Nominal baseline capacity</div>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Observed Cutoff Capacity</span>
+              <div class="kpi-value font-mono" id="card-latest-q">--</div>
+              <div class="kpi-subtext" id="card-fade-delta">Loss at cutoff: --</div>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Capacity Retention</span>
+              <div class="kpi-value font-mono text-primary" id="card-retention">--</div>
+              <div class="kpi-subtext">Relative to Cycle 2</div>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Internal Resistance ($IR_N$)</span>
+              <div class="kpi-value font-mono" id="card-latest-ir">--</div>
+              <div class="kpi-subtext" id="card-ir-growth">IR growth: --</div>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Peak Temperature</span>
+              <div class="kpi-value font-mono" id="card-tmax">--</div>
+              <div class="kpi-subtext">Max thermal envelope</div>
+            </div>
+            <div class="kpi-card">
+              <span class="kpi-label">Total Completed Cycles</span>
+              <div class="kpi-value font-mono text-success" id="card-total-cycles">--</div>
+              <div class="kpi-subtext" id="card-observed-cycles">Cutoff window: 100 cycles</div>
+            </div>
+          </div>
+
+          <!-- Factual Cell Degradation Observations & Telemetry Log -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <span>Factual Cell Degradation Observations &amp; Telemetry Log</span>
+                </div>
+                <span class="card-subtitle">Empirical physical telemetry measurements observed up to selected cutoff</span>
+              </div>
+            </div>
+
+            <!-- Bulleted observations -->
+            <div id="observations-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Landmark Telemetry Measurements Table -->
+            <div class="heroui-table-container" style="margin-top: 10px;">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Observed Cycle</th>
+                    <th>Discharge Capacity (Ah)</th>
+                    <th>Charge Capacity (Ah)</th>
+                    <th>Internal Resistance (&Omega;)</th>
+                    <th>Max Temp (&deg;C)</th>
+                    <th>Avg Temp (&deg;C)</th>
+                    <th>Charge Time (min)</th>
+                  </tr>
+                </thead>
+                <tbody id="observations-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Grouped 46 Features Inspector -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                  <span>46-Feature Extraction Inspector</span>
+                </div>
+                <span class="card-subtitle">Organized by feature groups according to the M1–M4 model hierarchy</span>
+              </div>
+
+              <!-- Feature Group Tabs -->
+              <div class="heroui-tabs" id="feature-group-tabs">
+                <button class="heroui-tab active" data-group="Condition">Condition (18)</button>
+                <button class="heroui-tab" data-group="Trajectory">Trajectory (16)</button>
+                <button class="heroui-tab" data-group="Peer-Relative">Peer-Relative (8)</button>
+                <button class="heroui-tab" data-group="Peer Reliability (PMRI)">PMRI / Reliability (4)</button>
+                <button class="heroui-tab" data-group="All">All Features (46)</button>
+              </div>
+            </div>
+
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Feature Key</th>
+                    <th>Display Name</th>
+                    <th>Group</th>
+                    <th>Value</th>
+                    <th>Unit</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody id="features-table-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 4: PEER COMPARISON & RELATIVE ANALYSIS
+             ================================================================== -->
+        <section class="view-panel" id="view-peers">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Peer Comparison &amp; Relative Analysis</h2>
+              <p>Compare the target battery against its k=5 reference peers selected strictly from the training cohort based on early-life feature similarity.</p>
+            </div>
+          </div>
+
+          <!-- Methodological Protocol Callout -->
+          <div class="heroui-alert alert-info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <div>
+              <strong>Peer Matching Protocol:</strong> Reference peers ($k=5$) are selected via standardized Euclidean distance over early-life baseline features. Test batteries select peers <em>exclusively</em> from the training pool to strictly prevent test-set leakage. No future cycle life or EOL labels are used during matching.
+            </div>
+          </div>
+
+          <!-- Peer Trajectory Overlay Card -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                  <span>Trajectory Overlay: Target Battery vs. Matched Peers</span>
+                </div>
+                <span class="card-subtitle">Target battery (solid) vs. k=5 reference peers (semi-transparent) and peer centroid envelope (dashed)</span>
+              </div>
+            </div>
+            <div class="chart-container-large">
+              <canvas id="peer-trajectory-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Matched Peers List & Deviations -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                  <span>Matched Reference Peers ($k=5$)</span>
+                </div>
+                <span class="card-subtitle">Ranked by early-life standardized Euclidean similarity distance</span>
+              </div>
+              <div id="peer-chips-container" style="display: flex; gap: 8px;"></div>
+            </div>
+
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Peer Cell ID</th>
+                    <th>Batch</th>
+                    <th>Charging Policy</th>
+                    <th>Match Distance ($d$)</th>
+                    <th>Weight ($w_i$)</th>
+                    <th>Actual Life (Retrospective)</th>
+                    <th>Capacity Dev (&Delta;Q)</th>
+                    <th>Slope Dev (&Delta;Slope)</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="peer-metrics-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Peer Reliability & Warnings Banner -->
+          <div class="heroui-alert alert-warning" id="pmri-warning-badge" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <div>
+              <strong>Reliability Caution:</strong> Peer Match Reliability Index (PMRI) is below nominal threshold ($< 0.40$), or peer trajectory dispersion is elevated. Predictions for this battery should be interpreted cautiously.
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 5: EOL RISK PREDICTION & MODEL SCREENING
+             ================================================================== -->
+        <section class="view-panel" id="view-risk">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>EOL Risk Prediction &amp; Model Screening</h2>
+              <p>Evaluate predicted early End-of-Life risk ($P(\text{EOL} \le 550)$) across the 4 controlled model configurations (M1–M4).</p>
+            </div>
+          </div>
+
+          <!-- Model Selector Pills -->
+          <div class="heroui-card" style="padding: 16px 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+              <div class="toolbar-group">
+                <span class="toolbar-label">Select Model Configuration:</span>
+                <div class="heroui-tabs" id="model-selector">
+                  <button class="heroui-tab" data-model="M1" title="M1: Condition Baseline (18 features)">M1: Condition (18)</button>
+                  <button class="heroui-tab" data-model="M2" title="M2: Trajectory (+16 features = 34)">M2: Trajectory (34)</button>
+                  <button class="heroui-tab" data-model="M3" title="M3: Peer-Relative (+8 features = 42)">M3: Peer-Relative (42)</button>
+                  <button class="heroui-tab active" data-model="M4" title="M4: Confidence-Aware (+4 PMRI = 46)">M4: PMRI-Aware (46)</button>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <div class="toolbar-group">
+                  <span class="toolbar-label">Observation Cutoff:</span>
+                  <span class="heroui-chip chip-primary" id="risk-cutoff-label">100 Cycles</span>
+                </div>
+                <div class="toolbar-group">
+                  <span class="toolbar-label">Active ML:</span>
+                  <span class="heroui-chip chip-secondary" id="risk-active-algo-chip" style="font-weight: 600;">Standardized Logistic Regression</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Risk Hero Scorecard -->
+          <div class="risk-hero-card">
+            <div class="risk-gauge-box">
+              <div class="kpi-label">Predicted Risk</div>
+              <div class="risk-probability-val text-primary" id="risk-prob-num">0.00</div>
+              <div class="kpi-subtext" style="justify-content: center;">$P(\text{EOL} \le 550)$</div>
+            </div>
+
+            <div class="risk-details-col">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span class="risk-badge-large chip-neutral" id="risk-status-badge">Calculating...</span>
+                <span class="heroui-chip chip-primary" id="risk-model-label">M4: PMRI-Aware</span>
+              </div>
+
+              <div class="heroui-progress">
+                <div class="heroui-progress-bar" id="risk-progress-bar" style="width: 0%; background: var(--heroui-primary);"></div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 4px;">
+                <div>
+                  <span class="text-muted" style="font-size: 11px;">Decision Threshold:</span>
+                  <div class="font-mono font-semibold" id="risk-detail-thresh">&tau; = 0.500</div>
+                </div>
+                <div>
+                  <span class="text-muted" style="font-size: 11px;">Feature Count:</span>
+                  <div class="font-mono font-semibold" id="risk-detail-features">46 Features</div>
+                </div>
+                <div>
+                  <span class="text-muted" style="font-size: 11px;">PMRI Reliability:</span>
+                  <div class="font-mono font-semibold" id="pmri-composite-val">--</div>
+                </div>
+                <div>
+                  <span class="text-muted" style="font-size: 11px;">Peer Status:</span>
+                  <div class="font-mono font-semibold text-success" id="risk-peer-status">5 Matched</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4-Model Comparative Table -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                <span>Four-Model Comparative Screening Matrix (M1–M4)</span>
+              </div>
+              <span class="card-subtitle">Direct comparison across M1, M2, M3, and M4 for the active cycle cutoff</span>
+            </div>
+
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Model</th>
+                    <th>Configuration</th>
+                    <th>Features</th>
+                    <th>Probability</th>
+                    <th>Threshold</th>
+                    <th>Predicted Category</th>
+                    <th>PMRI Reliability</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="models-comparison-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 6: MODEL EVALUATION & BENCHMARKS
+             ================================================================== -->
+        <section class="view-panel" id="view-evaluation">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Model Evaluation &amp; Benchmarks</h2>
+              <p>Empirical performance metrics across M1–M4, multi-algorithm cross-validation, and official research figures.</p>
+            </div>
+            <div class="view-actions">
+              <div class="toolbar-group">
+                <span class="toolbar-label">Cutoff:</span>
+                <div class="heroui-tabs" id="eval-cutoff-tabs">
+                  <button class="heroui-tab active" data-eval-cutoff="100">100 Cycles</button>
+                  <button class="heroui-tab" data-eval-cutoff="70">70 Cycles</button>
+                  <button class="heroui-tab" data-eval-cutoff="40">40 Cycles</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Evaluation Metrics Table -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                <span>Primary Test Set Benchmark (Batch 3, 40 Cells)</span>
+              </div>
+              <span class="card-subtitle">Strict out-of-sample evaluation with zero training leakage</span>
+            </div>
+
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Model</th>
+                    <th>Observation Cutoff</th>
+                    <th>AUROC</th>
+                    <th>AUPRC</th>
+                    <th>Brier Score</th>
+                    <th>ECE (Calibration)</th>
+                    <th>Sensitivity</th>
+                    <th>Specificity</th>
+                  </tr>
+                </thead>
+                <tbody id="research-metrics-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Research Figures Gallery -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                  <span>Verified Research Figures</span>
+                </div>
+                <span class="card-subtitle">Official publication plots generated from validated Phase 6 experiments</span>
+              </div>
+
+              <!-- Figure Switcher Tabs -->
+              <div class="heroui-tabs" id="figure-switcher-tabs">
+                <button class="heroui-tab active" data-fig="cutoff_comparison">Cutoff Comparison</button>
+                <button class="heroui-tab" data-fig="model_differences">Model Differences</button>
+                <button class="heroui-tab" data-fig="pmri_stratification">PMRI Stratification</button>
+                <button class="heroui-tab" data-fig="calibration_diagrams">Calibration Curves</button>
+              </div>
+            </div>
+
+            <div class="research-figure-frame">
+              <img id="research-figure-img" src="/results/figures/cutoff_comparison.png" alt="Cutoff Comparison Plot" />
+            </div>
+          </div>
+
+          <!-- Multi-Algorithm Benchmark Table -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><rect x="4" y="4" width="16" height="16" rx="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                  <span>Multi-Algorithm Architecture Benchmark (H4 Verification)</span>
+                </div>
+                <span class="card-subtitle">Cross-validating Logistic Regression, Random Forest, RBF-SVM, and HistGradientBoosting</span>
+              </div>
+
+              <div class="toolbar-group">
+                <span class="toolbar-label">Algorithm:</span>
+                <select id="filter-algo-select" class="heroui-select">
+                  <option value="all">All Algorithms</option>
+                  <option value="LogisticRegression">Logistic Regression</option>
+                  <option value="RandomForest">Random Forest</option>
+                  <option value="SVM">RBF-SVM</option>
+                  <option value="HistGradientBoosting">HistGradientBoosting</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Algorithm</th>
+                    <th>Model</th>
+                    <th>Cutoff</th>
+                    <th>AUROC</th>
+                    <th>AUPRC</th>
+                    <th>Brier Score</th>
+                    <th>F1 Score</th>
+                  </tr>
+                </thead>
+                <tbody id="multi-algo-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 7: ALGORITHM BENCHMARKING & COMPARATIVE ARCHITECTURE
+             ================================================================== -->
+        <section class="view-panel" id="view-benchmarks">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Algorithm Benchmarking &amp; Comparative Architecture</h2>
+              <p>Rigorous empirical benchmarking of Standardized Logistic Regression, RBF-SVM, and TabPFN 2.5 foundation model across M1–M4 and cutoffs (36 configurations total).</p>
+            </div>
+            <div class="view-actions">
+              <div class="toolbar-group">
+                <span class="toolbar-label">Cutoff:</span>
+                <div class="heroui-tabs" id="bench-cutoff-tabs">
+                  <button class="heroui-tab active" data-bench-cutoff="100">100 Cycles</button>
+                  <button class="heroui-tab" data-bench-cutoff="70">70 Cycles</button>
+                  <button class="heroui-tab" data-bench-cutoff="40">40 Cycles</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Algorithm Banner & 4 Model Cards -->
+          <div class="heroui-card" style="margin-bottom: 20px;">
+            <div class="card-header" style="border-bottom: 1px solid var(--heroui-divider); padding-bottom: 12px;">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                  <span>Active Architecture Performance Matrix</span>
+                </div>
+                <span class="card-subtitle">Out-of-sample primary test metrics for the globally selected algorithm across M1–M4</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="text-muted" style="font-size: 11.5px; font-weight: 600;">ACTIVE ARCHITECTURE:</span>
+                <span class="heroui-chip chip-primary" id="bench-active-algo-name" style="font-weight: 700;">Standardized Logistic Regression</span>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; padding: 18px 20px;">
+              <!-- M1 Card -->
+              <div class="heroui-card" style="background: var(--heroui-content2); border: 1px solid var(--heroui-border); padding: 16px; margin: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="font-mono font-bold text-primary" style="font-size: 14px;">M1: Condition</span>
+                  <span class="heroui-chip chip-neutral" style="font-size: 10px;">18 Feats</span>
+                </div>
+                <div style="font-size: 11px; color: var(--heroui-foreground-muted); margin-bottom: 12px;">Initial state snapshot baseline</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="text-muted" style="font-size: 11.5px;">AUROC:</span>
+                  <span class="font-mono font-bold" id="bench-card-m1-auroc">0.9217</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="text-muted" style="font-size: 11.5px;">AUPRC:</span>
+                  <span class="font-mono font-bold" id="bench-card-m1-auprc">0.8690</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span class="text-muted" style="font-size: 11.5px;">Brier Score:</span>
+                  <span class="font-mono" id="bench-card-m1-brier">0.0859</span>
+                </div>
+              </div>
+
+              <!-- M2 Card -->
+              <div class="heroui-card" style="background: var(--heroui-content2); border: 1px solid var(--heroui-border); padding: 16px; margin: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="font-mono font-bold text-primary" style="font-size: 14px;">M2: Trajectory</span>
+                  <span class="heroui-chip chip-neutral" style="font-size: 10px;">34 Feats</span>
+                </div>
+                <div style="font-size: 11px; color: var(--heroui-foreground-muted); margin-bottom: 12px;">+16 dynamic degradation curves</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="text-muted" style="font-size: 11.5px;">AUROC:</span>
+                  <span class="font-mono font-bold" id="bench-card-m2-auroc">0.9152</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="text-muted" style="font-size: 11.5px;">AUPRC:</span>
+                  <span class="font-mono font-bold" id="bench-card-m2-auprc">0.8654</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span class="text-muted" style="font-size: 11.5px;">Brier Score:</span>
+                  <span class="font-mono" id="bench-card-m2-brier">0.0807</span>
+                </div>
+              </div>
+
+              <!-- M3 Card -->
+              <div class="heroui-card" style="background: var(--heroui-content2); border: 1px solid var(--heroui-border); padding: 16px; margin: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="font-mono font-bold text-primary" style="font-size: 14px;">M3: Peer-Relative</span>
+                  <span class="heroui-chip chip-neutral" style="font-size: 10px;">42 Feats</span>
+                </div>
+                <div style="font-size: 11px; color: var(--heroui-foreground-muted); margin-bottom: 12px;">+8 relative peer deviation features</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="text-muted" style="font-size: 11.5px;">AUROC:</span>
+                  <span class="font-mono font-bold" id="bench-card-m3-auroc">0.9087</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="text-muted" style="font-size: 11.5px;">AUPRC:</span>
+                  <span class="font-mono font-bold" id="bench-card-m3-auprc">0.8521</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span class="text-muted" style="font-size: 11.5px;">Brier Score:</span>
+                  <span class="font-mono" id="bench-card-m3-brier">0.0801</span>
+                </div>
+              </div>
+
+              <!-- M4 Card -->
+              <div class="heroui-card" style="background: var(--heroui-content2); border: 1.5px solid var(--heroui-primary); padding: 16px; margin: 0; box-shadow: 0 2px 10px rgba(0, 111, 238, 0.08);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span class="font-mono font-bold text-primary" style="font-size: 14px;">M4: PMRI-Aware</span>
+                  <span class="heroui-chip chip-primary" style="font-size: 10px;">46 Feats (Proposed)</span>
+                </div>
+                <div style="font-size: 11px; color: var(--heroui-foreground-muted); margin-bottom: 12px;">+4 PMRI reliability dimensions</div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="text-muted" style="font-size: 11.5px;">AUROC:</span>
+                  <span class="font-mono font-bold text-success" id="bench-card-m4-auroc">0.9065</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span class="text-muted" style="font-size: 11.5px;">AUPRC:</span>
+                  <span class="font-mono font-bold" id="bench-card-m4-auprc">0.8492</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span class="text-muted" style="font-size: 11.5px;">Brier Score:</span>
+                  <span class="font-mono" id="bench-card-m4-brier">0.0815</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance Visualizations: AUROC & Calibration Side-by-Side -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; margin-bottom: 20px;">
+            <div class="heroui-card" style="margin: 0;">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                  <span>AUROC Comparison Across Algorithms</span>
+                </div>
+                <span class="card-subtitle">Primary test set discrimination at active cutoff</span>
+              </div>
+              <div style="height: 280px; position: relative; padding: 12px 16px;">
+                <canvas id="bench-chart-auroc"></canvas>
+              </div>
+            </div>
+
+            <div class="heroui-card" style="margin: 0;">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  <span>Brier Score (Probabilistic Calibration)</span>
+                </div>
+                <span class="card-subtitle">Lower is strictly superior (0.00 = perfect calibration)</span>
+              </div>
+              <div style="height: 280px; position: relative; padding: 12px 16px;">
+                <canvas id="bench-chart-brier"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comprehensive 3-Algorithm Comparative Benchmark Table -->
+          <div class="heroui-card" style="margin-bottom: 20px;">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                  <span>Multi-Algorithm Comparative Benchmark (36 Configurations)</span>
+                </div>
+                <span class="card-subtitle">Primary test set (Batch 3, 40 cells) out-of-sample evaluations</span>
+              </div>
+
+              <div class="toolbar-group">
+                <span class="toolbar-label">Filter Algorithm:</span>
+                <select id="bench-table-filter-algo" class="heroui-select">
+                  <option value="all">All 3 Algorithms</option>
+                  <option value="logistic_regression">Standardized Logistic Regression</option>
+                  <option value="rbf_svm">RBF-SVM</option>
+                  <option value="tabpfn_2_5">TabPFN 2.5</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Algorithm</th>
+                    <th>Model</th>
+                    <th>Features</th>
+                    <th>Cutoff</th>
+                    <th>AUROC</th>
+                    <th>AUPRC</th>
+                    <th>Brier Score</th>
+                    <th>Accuracy</th>
+                    <th>Sensitivity</th>
+                    <th>Specificity</th>
+                  </tr>
+                </thead>
+                <tbody id="bench-table-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Distribution-Shift Analysis & Research Findings -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px;">
+            <!-- Distribution Shift Card -->
+            <div class="heroui-card" style="margin: 0;">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                  <span>Distribution-Shift Analysis (Batch 3 Fast-Charging Shift)</span>
+                </div>
+                <span class="card-subtitle">In-Distribution (Primary Test, 43 cells) vs Policy Shift (Secondary Test, 40 cells)</span>
+              </div>
+              <div style="padding: 16px 20px;">
+                <p style="font-size: 12.5px; color: var(--heroui-foreground-muted); line-height: 1.5; margin-bottom: 14px;">
+                  Evaluating robustness when battery cells operate under unobserved fast-charging protocols. Secondary test cells feature multi-step high-rate charging protocols absent from the training partition.
+                </p>
+                <div class="heroui-table-container">
+                  <table class="heroui-table" style="font-size: 12px;">
+                    <thead>
+                      <tr>
+                        <th>Algorithm</th>
+                        <th>In-Domain AUROC</th>
+                        <th>Shifted AUROC</th>
+                        <th>Robustness Delta</th>
+                      </tr>
+                    </thead>
+                    <tbody id="bench-shift-tbody">
+                      <!-- Populated by JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scientific Research Findings & Leaderboard Card -->
+            <div class="heroui-card" style="margin: 0;">
+              <div class="card-header">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                  <span>Architecture Leaderboard &amp; Empirical Takeaways</span>
+                </div>
+                <span class="card-subtitle">Rigorous scientific takeaways from multi-algorithm cross-validation</span>
+              </div>
+              <div style="padding: 16px 20px;">
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(0, 111, 238, 0.08); border-radius: var(--heroui-radius-sm); border-left: 3px solid var(--heroui-primary);">
+                    <div>
+                      <span class="font-bold text-primary" style="font-size: 12.5px;">#1 TabPFN 2.5 (Foundation Model)</span>
+                      <div style="font-size: 11px; color: var(--heroui-foreground-muted);">Mean Primary AUROC: 0.9729 | Secondary: 0.9744</div>
+                    </div>
+                    <span class="heroui-chip chip-primary" style="font-weight: 700;">Top Generalization</span>
+                  </div>
+
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--heroui-content2); border-radius: var(--heroui-radius-sm); border-left: 3px solid var(--heroui-success);">
+                    <div>
+                      <span class="font-bold" style="font-size: 12.5px;">#2 RBF-SVM (Nonlinear Kernel)</span>
+                      <div style="font-size: 11px; color: var(--heroui-foreground-muted);">Mean Primary AUROC: 0.9691 | Cutoff 70 M4: 0.9913</div>
+                    </div>
+                    <span class="heroui-chip chip-success" style="font-weight: 700;">High Discrimination</span>
+                  </div>
+
+                  <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--heroui-content2); border-radius: var(--heroui-radius-sm); border-left: 3px solid var(--heroui-warning);">
+                    <div>
+                      <span class="font-bold" style="font-size: 12.5px;">#3 Standardized Logistic Regression</span>
+                      <div style="font-size: 11px; color: var(--heroui-foreground-muted);">Mean Primary AUROC: 0.9072 | Brier Score: 0.0790</div>
+                    </div>
+                    <span class="heroui-chip chip-warning" style="font-weight: 700;">Calibrated Linear</span>
+                  </div>
+                </div>
+
+                <div style="font-size: 12px; color: var(--heroui-foreground-muted); line-height: 1.5; padding: 10px; background: var(--heroui-content2); border-radius: var(--heroui-radius-sm);">
+                  <strong>Key Finding:</strong> Across linear, kernel, and foundation architectures, the integration of peer-relative features ($M3$) and PMRI confidence metrics ($M4$) consistently improves early-life degradation risk prediction, confirming the generalizability of the proposed framework.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 7: PMRI & CONFIDENCE ANALYSIS
+             ================================================================== -->
+        <section class="view-panel" id="view-pmri">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>PMRI &amp; Confidence Analysis</h2>
+              <p>In-depth inspection of the Peer-Match Reliability Index (PMRI), negative-control permutation tests, and selective prediction.</p>
+            </div>
+          </div>
+
+          <!-- PMRI 4-Component Breakdown -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                  <span>PMRI Mathematical Formulation &amp; Component Decomposition</span>
+                </div>
+                <span class="card-subtitle">Composite reliability index $PMRI = 0.35 S_{\text{peer}} + 0.30 A_{\text{peer}} + 0.20 C_{\text{cond}} + 0.15 K_{\text{avail}} \in [0.0, 1.0]$</span>
+              </div>
+            </div>
+
+            <div class="grid-2col">
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span class="font-semibold" style="font-size: 13px;">1. Distance Similarity Score ($S_{\text{peer}}$)</span>
+                    <span class="font-mono text-primary font-semibold" id="pmri-mean-dist">--</span>
+                  </div>
+                  <div class="heroui-progress">
+                    <div class="heroui-progress-bar" id="pmri-bar-dist" style="width: 0%; background: var(--heroui-primary);"></div>
+                  </div>
+                  <span class="text-subtle" style="font-size: 11px;">Exponential similarity: $\exp(-d_{\text{mean}} / \tau_s)$ based on standardized Euclidean distance</span>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span class="font-semibold" style="font-size: 13px;">2. Peer Agreement Score ($A_{\text{peer}}$)</span>
+                    <span class="font-mono text-warning font-semibold" id="pmri-dispersion">--</span>
+                  </div>
+                  <div class="heroui-progress">
+                    <div class="heroui-progress-bar" id="pmri-bar-traj" style="width: 0%; background: var(--heroui-warning);"></div>
+                  </div>
+                  <span class="text-subtle" style="font-size: 11px;">Trajectory slope agreement: $\exp(-\sigma_{\text{peer}} / \tau_a)$ among matched peers</span>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span class="font-semibold" style="font-size: 13px;">3. Condition Completeness ($C_{\text{cond}}$)</span>
+                    <span class="font-mono text-success font-semibold" id="pmri-bar-pol-val">--</span>
+                  </div>
+                  <div class="heroui-progress">
+                    <div class="heroui-progress-bar" id="pmri-bar-pol" style="width: 0%; background: var(--heroui-success);"></div>
+                  </div>
+                  <span class="text-subtle" style="font-size: 11px;">Feature completeness and baseline validity across matched peer covariates</span>
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span class="font-semibold" style="font-size: 13px;">4. Candidate Availability ($K_{\text{avail}}$)</span>
+                    <span class="font-mono text-secondary font-semibold" id="pmri-bar-ir-val">--</span>
+                  </div>
+                  <div class="heroui-progress">
+                    <div class="heroui-progress-bar" id="pmri-bar-ir" style="width: 0%; background: var(--heroui-secondary);"></div>
+                  </div>
+                  <span class="text-subtle" style="font-size: 11px;">Ratio of valid available reference candidates to target peer size $k=5$</span>
+                </div>
+              </div>
+
+              <div class="kpi-card" style="justify-content: center; align-items: center; text-align: center; gap: 12px;">
+                <span class="kpi-label">Composite PMRI Score</span>
+                <div class="risk-probability-val text-primary" id="pmri-composite-display">--</div>
+                <div class="heroui-chip chip-success" id="pmri-status-chip"><span class="chip-dot"></span> High Peer Congruence</div>
+                <p class="text-muted" style="font-size: 12px; max-width: 280px;">PMRI quantifies whether the reference peer set is sufficiently congruent to justify peer-relative screening.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 20-Seed Empirical Null Permutation Table -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                  <span>20-Seed Empirical Null Distribution Permutation Test (Negative Controls)</span>
+                </div>
+                <span class="card-subtitle">Comparing true peer matching against 20 random permutation seeds to verify physical signal</span>
+              </div>
+            </div>
+
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Experiment Cohort</th>
+                    <th>Cutoff</th>
+                    <th>Mean AUROC</th>
+                    <th>Mean AUPRC</th>
+                    <th>Mean Brier</th>
+                    <th>Empirical p-value</th>
+                    <th>Statistical Verdict</th>
+                  </tr>
+                </thead>
+                <tbody id="peer-controls-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Selective Prediction Risk-Coverage Trade-off Table -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                  <span>Selective Prediction Risk-Coverage Trade-Off</span>
+                </div>
+                <span class="card-subtitle">AUROC improvement when abstaining on low-trust batteries based on training quantile thresholds</span>
+              </div>
+            </div>
+
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Target Coverage</th>
+                    <th>Cutoff</th>
+                    <th>Trust Threshold (&theta;)</th>
+                    <th>Abstained Count</th>
+                    <th>Selective AUROC</th>
+                    <th>Selective AUPRC</th>
+                    <th>Selective Brier</th>
+                  </tr>
+                </thead>
+                <tbody id="selective-pred-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 8: RESEARCH INSIGHTS & METHODOLOGY
+             ================================================================== -->
+        <section class="view-panel" id="view-methodology">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Research Insights &amp; Methodology</h2>
+              <p>Academic briefing covering research objectives, leakage prevention invariants, and formal hypothesis verdicts.</p>
+            </div>
+          </div>
+
+          <!-- Hypotheses Verdicts Grid -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <span>Formal Hypothesis Evaluation Summary (Phase 6)</span>
+              </div>
+              <span class="card-subtitle">Statistical verdicts backed by paired bootstrap confidence intervals</span>
+            </div>
+
+            <div class="grid-2col" id="hypothesis-cards-grid">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Model Differences Table -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                <span>Paired Model Differences &amp; Statistical Significance</span>
+              </div>
+              <span class="card-subtitle">Evaluating incremental AUROC gain (&Delta;AUROC) and bootstrap 95% confidence intervals</span>
+            </div>
+
+            <div class="heroui-table-container">
+              <table class="heroui-table">
+                <thead>
+                  <tr>
+                    <th>Comparison Pair</th>
+                    <th>Cutoff</th>
+                    <th>&Delta;AUROC</th>
+                    <th>95% Bootstrap CI</th>
+                    <th>&Delta;AUPRC</th>
+                    <th>&Delta;Brier</th>
+                    <th>Significance</th>
+                  </tr>
+                </thead>
+                <tbody id="research-diff-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Methodology & Anti-Leakage Protocol Cards -->
+          <div class="grid-equal">
+            <div class="heroui-card">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Strict Anti-Leakage Protocol (8 Invariants)</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; margin-top: 4px;">
+                <div>&bull; <strong>Strict Batch Partitioning:</strong> Batches 1 &amp; 2 (84 cells) used solely for training; Batch 3 (40 cells) held out as primary test set.</div>
+                <div>&bull; <strong>Early-Life Invariance:</strong> Zero cycles beyond observation cutoff $N$ used for feature calculation.</div>
+                <div>&bull; <strong>Reference Pool Isolation:</strong> Test batteries match peers exclusively from the training reference pool.</div>
+                <div>&bull; <strong>Label Blinding:</strong> No EOL, RUL, or target labels used during matching or feature scaling.</div>
+                <div>&bull; <strong>Deterministic Preprocessing:</strong> Scalers fitted strictly on training partition and applied out-of-sample.</div>
+              </div>
+            </div>
+
+            <div class="heroui-card">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                <span>Citation &amp; Benchmark Origin</span>
+              </div>
+              <p style="font-size: 12.5px; color: var(--heroui-foreground-muted); line-height: 1.6;">
+                This capstone research utilizes commercial 1.1 Ah A123 Systems APR18650M1A cylindrical lithium iron phosphate (LFP/graphite) cells cycled under diverse fast-charging protocols.
+              </p>
+              <div style="font-size: 12px; background: var(--heroui-content2); padding: 10px; border-radius: var(--heroui-radius-sm); border: 1px solid var(--heroui-border); margin-top: 8px;">
+                <em>K. A. Severson et al., "Data-driven prediction of battery cycle life before capacity degradation," Nature Energy, vol. 4, no. 5, pp. 383–391, 2019.</em>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             VIEW 9: LABORATORY HARDWARE VALIDATION
+             ================================================================== -->
+        <section class="view-panel" id="view-hardware">
+          <div class="view-header">
+            <div class="view-title-group">
+              <h2>Laboratory Hardware CSV Anomaly Auditor</h2>
+              <p>Audit raw cycler telemetry data (Arbin, BioLogic, Maccor) to detect physical sensor anomalies, cycle jumps, and thermal spikes.</p>
+            </div>
+          </div>
+
+          <!-- Drag and Drop Upload Area -->
+          <div class="dropzone-box" id="hw-upload-dropzone">
+            <input type="file" id="hw-file-input" accept=".csv" style="display: none;" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <div class="font-bold" style="font-size: 14px;">Drag &amp; Drop Cycler CSV Here or Click to Browse</div>
+            <div class="text-muted" style="font-size: 12px;">Supports Arbin, BioLogic, or Maccor cycle summary exports</div>
+          </div>
+
+          <!-- Controls for Quick Sample Loading -->
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <button class="heroui-btn btn-flat btn-sm" id="btn-hw-load-valid">Load Valid Telemetry Sample</button>
+            <button class="heroui-btn btn-bordered btn-sm" id="btn-hw-load-corrupt">Load Telemetry with Injected Faults</button>
+            <button class="heroui-btn btn-primary btn-sm" id="btn-hw-execute-validate" style="margin-left: auto;">Run Anomaly Audit</button>
+          </div>
+
+          <!-- Raw CSV Text Area (collapsible / viewable) -->
+          <div class="heroui-card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><rect x="4" y="4" width="16" height="16" rx="2"></rect><line x1="9" y1="9" x2="15" y2="9"></line><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="11" y2="17"></line></svg>
+                <span>Telemetry CSV Buffer</span>
+              </div>
+              <span class="card-subtitle">Review raw tabular records before executing physical validation checks</span>
+            </div>
+            <textarea id="hw-csv-textarea" class="heroui-input" style="height: 140px; width: 100%; font-family: var(--heroui-font-mono); font-size: 11.5px; padding: 10px; resize: vertical;" placeholder="Paste CSV text here or load a sample above..."></textarea>
+          </div>
+
+          <!-- Audit Result Card -->
+          <div class="heroui-card" id="hw-audit-result-wrap" style="display: none;">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                  <span>Hardware Audit Diagnostics</span>
+                </div>
+                <span class="card-subtitle" id="hw-audit-summary-text">Ready for audit execution</span>
+              </div>
+              <span class="heroui-chip chip-neutral" id="hw-audit-verdict-badge">PENDING</span>
+            </div>
+
+            <!-- Errors & Anomalies List -->
+            <div id="hw-audit-errors-wrap" style="display: none;">
+              <div class="heroui-alert alert-danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <div style="flex: 1;">
+                  <strong>Detected Physical Anomalies:</strong>
+                  <ul id="hw-audit-errors-list" style="margin-top: 6px; padding-left: 20px; font-size: 12px;"></ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parsed Telemetry Preview Table -->
+            <div id="hw-audit-preview-wrap">
+              <div class="heroui-table-container">
+                <table class="heroui-table">
+                  <thead>
+                    <tr>
+                      <th>Cycle</th>
+                      <th>Discharge Cap (Ah)</th>
+                      <th>Charge Cap (Ah)</th>
+                      <th>Max Temp (&deg;C)</th>
+                      <th>IR (&Omega;)</th>
+                      <th>Charge Time (min)</th>
+                      <th>Validation State</th>
+                    </tr>
+                  </thead>
+                  <tbody id="hw-audit-sample-tbody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
     </div>
+  </div>
 
-    <!-- Chart Section: Battery Trajectory & Additional Measurements -->
-    <section class="chart-section">
-      <div class="section-card">
-        <div class="card-header-flex">
-          <div>
-            <h2 class="card-title">Battery Degradation Trajectory</h2>
-            <p class="card-subtitle">Real cycle-by-cycle measurements up to the selected observation window.</p>
-          </div>
-          <div class="metric-tabs" id="metric-tab-bar">
-            <button class="tab-btn active" data-metric="QDischarge">Discharge Capacity (Ah)</button>
-            <button class="tab-btn" data-metric="IR">Internal Resistance (Ω)</button>
-            <button class="tab-btn" data-metric="Tmax">Max Temperature (°C)</button>
-            <button class="tab-btn" data-metric="Tavg">Avg Temperature (°C)</button>
-            <button class="tab-btn" data-metric="chargetime">Charge Time (min)</button>
-          </div>
-        </div>
-        <div class="chart-container">
-          <canvas id="trajectory-chart"></canvas>
-        </div>
-        <div class="chart-footer-legend">
-          <span class="legend-item"><span class="legend-dot dot-primary"></span> Observed Cell Trajectory</span>
-          <span class="legend-item" id="legend-nominal"><span class="legend-line line-green"></span> Nominal Capacity (1.10 Ah)</span>
-          <span class="legend-item" id="legend-eol"><span class="legend-line line-red"></span> 80% EOL Threshold (0.88 Ah)</span>
-          <span class="legend-item"><span class="legend-line line-dashed"></span> Observation Window Cutoff</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Section F: Exploratory Battery Comparison -->
-    <section class="chart-section">
-      <div class="section-card">
-        <div class="card-header-flex">
-          <div>
-            <div class="title-with-badge">
-              <h2 class="card-title">Exploratory Battery Comparison</h2>
-              <span class="badge badge-warning">Exploratory Multi-Cell Overlay</span>
-            </div>
-            <p class="card-subtitle">Compare the selected battery with other cells across the dataset to observe comparative trajectory spread.</p>
-          </div>
-          <div class="compare-controls">
-            <div class="quick-cohort-buttons">
-              <button class="btn btn-sm" id="btn-compare-same-policy">Compare Same Policy</button>
-              <button class="btn btn-sm" id="btn-compare-batch-samples">Compare Across Batches</button>
-              <button class="btn btn-sm btn-ghost" id="btn-clear-compare">Reset</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="compare-picker-bar">
-          <label>Add/Remove Comparison Cells:</label>
-          <div id="compare-pills-list" class="compare-chips">
-            <!-- Dynamic comparison chips -->
-          </div>
-          <div class="add-cell-input-wrapper">
-            <select id="compare-cell-select" class="form-control form-control-sm">
-              <option value="">+ Add cell to comparison...</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="chart-container">
-          <canvas id="comparison-chart"></canvas>
-        </div>
-
-        <div class="callout callout-warning">
-          <div class="callout-icon">⚠️</div>
-          <div class="callout-text">
-            <strong>Scientific Integrity Notice:</strong> This section displays an <em>exploratory comparison</em> of user-selected batteries. It does <strong>not</strong> claim these cells are scientifically matched peers. Validated peer-matching algorithms (evaluating operational condition similarity, cohort size <em>k</em>, and trajectory agreement) are scheduled for development in <strong>Phase 5</strong>.
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Section G: Feature Analysis -->
-    <section class="features-section">
-      <div class="section-card">
-        <div class="card-header-flex">
-          <div>
-            <h2 class="card-title">Engineered Feature Analysis</h2>
-            <p class="card-subtitle">Review the 34 validated features computed for the selected battery at the active cutoff window.</p>
-          </div>
-          <div class="feature-group-tabs" id="feature-group-tabs">
-            <button class="tab-btn active" data-group="Initial Condition">Initial Condition (11)</button>
-            <button class="tab-btn" data-group="Instantaneous Snapshot">Snapshot at Cutoff (7)</button>
-            <button class="tab-btn" data-group="Emerging Trajectory">Emerging Trajectory (11)</button>
-            <button class="tab-btn" data-group="Differential Curves">Differential Curves (5)</button>
-          </div>
-        </div>
-
-        <div class="table-responsive">
-          <table class="features-table" id="features-table">
-            <thead>
-              <tr>
-                <th>Feature Name</th>
-                <th>Database Column</th>
-                <th>Computed Value</th>
-                <th>Unit</th>
-                <th>Physical Description & Formulation</th>
-              </tr>
-            </thead>
-            <tbody id="features-table-body">
-              <tr><td colspan="5" class="text-center">Select a battery to inspect features.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- Section H: Machine Learning EOL Risk Prediction & Comparative Assessment -->
-    <section class="section-card" id="section-risk-prediction">
-      <div class="card-header-flex">
-        <div>
-          <div class="title-with-badge">
-            <h2 class="card-title">Machine Learning EOL Risk Prediction</h2>
-            <span class="badge badge-accent">Phase 7 Live Model Integration</span>
-          </div>
-          <p class="card-subtitle">Validated binary risk screening: Estimated probability that the battery reaches End-of-Life (≤ 80% capacity) within 500 cycles of observation cutoff.</p>
-        </div>
-        <div id="risk-validation-badge-wrap">
-          <!-- Populated dynamically -->
-        </div>
-      </div>
-
-      <div class="risk-summary-card">
-        <div class="risk-display-flex">
-          <div class="risk-score-box">
-            <div class="risk-score-num text-cyan" id="risk-prob-num">--%</div>
-            <div class="risk-score-lbl">Estimated Failure Risk (<span id="risk-model-label">M4</span> at Cutoff <span id="risk-cutoff-label">100</span>)</div>
-          </div>
-          <div id="risk-category-badge-container">
-            <span class="risk-badge risk-badge-nominal" id="risk-status-badge">Nominal Risk</span>
-          </div>
-        </div>
-
-        <div class="risk-details-list">
-          <div class="risk-detail-item">
-            <span class="risk-detail-lbl">Active Model:</span>
-            <span class="risk-detail-val" id="risk-detail-model">M4 (Confidence-Aware)</span>
-          </div>
-          <div class="risk-detail-item">
-            <span class="risk-detail-lbl">Target Formulation:</span>
-            <span class="risk-detail-val">target_fail_within_500</span>
-          </div>
-          <div class="risk-detail-item">
-            <span class="risk-detail-lbl">Decision Threshold:</span>
-            <span class="risk-detail-val" id="risk-detail-thresh">0.5790 (5-fold CV)</span>
-          </div>
-          <div class="risk-detail-item">
-            <span class="risk-detail-lbl">Feature Count:</span>
-            <span class="risk-detail-val" id="risk-detail-features">46 Features</span>
-          </div>
-          <div class="risk-detail-item">
-            <span class="risk-detail-lbl">Prediction Origin:</span>
-            <span class="risk-detail-val text-teal">Saved Validated Prediction</span>
-          </div>
-          <div class="risk-detail-item">
-            <span class="risk-detail-lbl">Validation Cohort:</span>
-            <span class="risk-detail-val" id="risk-detail-partition">Primary Test (N=43)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Model Comparison Table -->
-      <div style="margin-top: 1.5rem;">
-        <h4 class="subhead">Four-Model Comparative Risk Assessment (M1 — M4)</h4>
-        <div class="table-responsive">
-          <table class="features-table" id="models-comparison-table">
-            <thead>
-              <tr>
-                <th>Model</th>
-                <th>Configuration Name</th>
-                <th>Feature Count</th>
-                <th>Feature Groups Included</th>
-                <th>Estimated Probability</th>
-                <th>Threshold</th>
-                <th>Risk Classification</th>
-              </tr>
-            </thead>
-            <tbody id="models-comparison-tbody">
-              <!-- Populated dynamically -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Sequestered Ground Truth Reference Box -->
-      <div class="audit-targets-card" style="margin-top: 1.25rem;">
-        <h4 class="subhead">Sequestered Benchmark Target Reference (Audit Only — Never Exposed to Features)</h4>
-        <div class="target-grid" id="ground-truth-targets">
-          <div class="target-item">
-            <span class="t-label">True EOL Cycle (80% Capacity):</span>
-            <span class="t-val" id="val-target-eol">--</span>
-          </div>
-          <div class="target-item">
-            <span class="t-label">Remaining Useful Life (RUL):</span>
-            <span class="t-val" id="val-target-rul">--</span>
-          </div>
-          <div class="target-item">
-            <span class="t-label">Failure Within 500 Cycles?:</span>
-            <span class="t-val" id="val-target-500">--</span>
-          </div>
-          <div class="target-item">
-            <span class="t-label">Early Failure (Cycle ≤ 700)?:</span>
-            <span class="t-val" id="val-target-700">--</span>
-          </div>
-        </div>
-        <p class="target-note">Target labels represent true empirical outcomes sequestered during feature extraction and early observation.</p>
-      </div>
-    </section>
-
-    <!-- Section: Peer-Relative Degradation Analysis & Aligned Trajectory Overlay -->
-    <section class="section-card" id="section-peer-relative">
-      <div class="card-header-flex">
-        <div>
-          <div class="title-with-badge">
-            <h2 class="card-title">Peer-Relative Degradation Analysis</h2>
-            <span class="badge badge-teal">Scientifically Matched Reference Peers (k=5)</span>
-          </div>
-          <p class="card-subtitle">Compare target cell degradation against matched training reference peers having similar initial state (Q2, IR2) and charging protocol.</p>
-        </div>
-        <div>
-          <span class="badge badge-outline" id="peer-status-pill">Status: MATCH_SUCCESS</span>
-        </div>
-      </div>
-
-      <div class="peer-chips-wrap" id="peer-chips-container">
-        <!-- Matched peer chips populated dynamically -->
-      </div>
-
-      <div class="chart-container" style="margin-top: 1.25rem;">
-        <canvas id="peer-trajectory-chart"></canvas>
-      </div>
-
-      <div style="margin-top: 1.5rem;">
-        <h4 class="subhead">Relative Trajectory Deviation Metrics</h4>
-        <div class="table-responsive">
-          <table class="features-table">
-            <thead>
-              <tr>
-                <th>Relative Metric</th>
-                <th>Database Column</th>
-                <th>Value</th>
-                <th>Physical Meaning</th>
-              </tr>
-            </thead>
-            <tbody id="peer-metrics-tbody">
-              <!-- Populated dynamically -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- Section I: Peer-Match Reliability Index (PMRI) -->
-    <section class="section-card" id="section-pmri">
-      <div class="card-header-flex">
-        <div>
-          <div class="title-with-badge">
-            <h2 class="card-title">Peer-Match Reliability Index (PMRI)</h2>
-            <span class="badge badge-purple">Confidence & Uncertainty Assessment</span>
-          </div>
-          <p class="card-subtitle">Quantifies how densely and closely the target battery matches the reference training cohort.</p>
-        </div>
-        <div id="pmri-warning-badge-wrap">
-          <span class="badge badge-success" id="pmri-warning-badge">No Reliability Warnings</span>
-        </div>
-      </div>
-
-      <div class="pmri-gauge-card">
-        <div class="pmri-main-header">
-          <div>
-            <div class="pmri-value-large" id="pmri-composite-val">0.8576</div>
-            <div class="risk-score-lbl">Composite PMRI Score (Scale: 0.00 — 1.00)</div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 0.82rem; color: var(--text-muted);">Mean Peer Distance: <strong class="text-main" id="pmri-mean-dist">0.6137</strong></div>
-            <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.25rem;">Cohort Trajectory Dispersion: <strong class="text-main" id="pmri-dispersion">0.0028 Ah</strong></div>
-          </div>
-        </div>
-
-        <div class="pmri-component-bars">
-          <div class="pmri-bar-row">
-            <span class="pmri-bar-label">S_sim (Peer Similarity):</span>
-            <div class="pmri-bar-track"><div class="pmri-bar-fill" id="bar-s-sim" style="width: 85%;"></div></div>
-            <span class="pmri-bar-val" id="val-s-sim">0.8500</span>
-          </div>
-          <div class="pmri-bar-row">
-            <span class="pmri-bar-label">S_cov (Pool Coverage):</span>
-            <div class="pmri-bar-track"><div class="pmri-bar-fill" id="bar-s-cov" style="width: 90%;"></div></div>
-            <span class="pmri-bar-val" id="val-s-cov">0.9000</span>
-          </div>
-          <div class="pmri-bar-row">
-            <span class="pmri-bar-label">S_agree (Trajectory Agreement):</span>
-            <div class="pmri-bar-track"><div class="pmri-bar-fill" id="bar-s-agree" style="width: 82%;"></div></div>
-            <span class="pmri-bar-val" id="val-s-agree">0.8200</span>
-          </div>
-          <div class="pmri-bar-row">
-            <span class="pmri-bar-label">S_consist (Consistency):</span>
-            <div class="pmri-bar-track"><div class="pmri-bar-fill" id="bar-s-consist" style="width: 88%;"></div></div>
-            <span class="pmri-bar-val" id="val-s-consist">0.8800</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="callout callout-info" style="margin-top: 1rem;">
-        <div class="callout-icon">💡</div>
-        <div class="callout-text">
-          <strong>Scientific Interpretation of PMRI:</strong>
-          PMRI measures <em>reference match quality and cohort density</em>. It is <strong>not</strong> a failure probability, nor does a high PMRI mean the cell is healthy. A lower PMRI indicates caution: the training reference pool lacks close operational analogs for this cell, alerting operators to treat predictions with uncertainty or exercise abstention.
-        </div>
-      </div>
-    </section>
-
-    <!-- Section K: Research Model-Comparison Results & Hypothesis Findings -->
-    <section class="section-card" id="section-research-results">
-      <div class="card-header-flex">
-        <div>
-          <div class="title-with-badge">
-            <h2 class="card-title">Research Model-Comparison Results & Hypothesis Findings</h2>
-            <span class="badge badge-emerald">Phase 5 & 6 Experimental Outcomes</span>
-          </div>
-          <p class="card-subtitle">Empirical evidence from paired bootstrap uncertainty analysis (B=1000) and robustness experiments.</p>
-        </div>
-      </div>
-
-      <div class="research-tabs-bar" id="research-tabs-bar">
-        <button class="research-tab-btn active" data-tab="tab-perf">Model Performance Benchmark</button>
-        <button class="research-tab-btn" data-tab="tab-multi-algo">Multi-Algorithm Benchmark</button>
-        <button class="research-tab-btn" data-tab="tab-peer-controls">Peer Controls &amp; Selective Prediction</button>
-        <button class="research-tab-btn" data-tab="tab-hyp">Hypothesis Verdicts (H1–H4)</button>
-        <button class="research-tab-btn" data-tab="tab-diff">Paired Bootstrap Differences</button>
-        <button class="research-tab-btn" data-tab="tab-figs">Publication Visualizations</button>
-      </div>
-
-      <!-- Tab 1: Performance Benchmark -->
-      <div class="research-panel" id="tab-perf">
-        <h4 class="subhead">Performance Metrics on Benchmark Test Cohorts</h4>
-        <div class="table-responsive">
-          <table class="research-table" id="research-metrics-table">
-            <thead>
-              <tr>
-                <th>Cutoff</th>
-                <th>Model</th>
-                <th>Partition</th>
-                <th>Samples (Pos/Neg)</th>
-                <th>AUROC</th>
-                <th>AUPRC</th>
-                <th>Brier Score</th>
-                <th>ECE</th>
-                <th>Accuracy</th>
-                <th>Sensitivity</th>
-                <th>Specificity</th>
-                <th>F1-Score</th>
-              </tr>
-            </thead>
-            <tbody id="research-metrics-tbody">
-              <!-- Populated dynamically from /api/models/metrics -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Tab: Multi-Algorithm Benchmark -->
-      <div class="research-panel" id="tab-multi-algo" style="display: none;">
-        <div class="card-header-flex" style="margin-bottom: 0.75rem;">
-          <div>
-            <h4 class="subhead">Modular Machine Learning Algorithm Comparison</h4>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">
-              Standardized 5-fold training CV protocol and held-out Primary Test set (N=43) across 4 algorithm families.
-            </p>
-          </div>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
-            <label for="filter-algo-select" style="font-size: 0.82rem; color: var(--text-muted);">Algorithm:</label>
-            <select id="filter-algo-select" class="form-select form-select-sm" style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.25rem 0.5rem; font-size: 0.82rem;">
-              <option value="all">All Algorithms</option>
-              <option value="logistic_regression">Logistic Regression (Baseline)</option>
-              <option value="random_forest">Random Forest</option>
-              <option value="rbf_svm">RBF-SVM</option>
-              <option value="hist_gradient_boosting">HistGradientBoosting</option>
-            </select>
-          </div>
-        </div>
-        <div class="table-responsive">
-          <table class="research-table" id="multi-algo-table">
-            <thead>
-              <tr>
-                <th>Cutoff</th>
-                <th>Algorithm</th>
-                <th>Family</th>
-                <th>Model</th>
-                <th>Partition</th>
-                <th>AUROC</th>
-                <th>AUPRC</th>
-                <th>Brier Score</th>
-                <th>Sensitivity</th>
-                <th>Specificity</th>
-                <th>F1-Score</th>
-              </tr>
-            </thead>
-            <tbody id="multi-algo-tbody">
-              <!-- Populated dynamically from /api/research/algorithms -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Tab: Peer Controls & Selective Prediction -->
-      <div class="research-panel" id="tab-peer-controls" style="display: none;">
-        <h4 class="subhead">Multi-Seed Randomized Peer Controls (Empirical Null Distribution)</h4>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-          20 distinct random seeds permuting peer associations vs genuine peer matching (M3). Proves peer signal is non-random.
-        </p>
-        <div class="table-responsive" style="margin-bottom: 1.5rem;">
-          <table class="research-table" id="peer-controls-table">
-            <thead>
-              <tr>
-                <th>Cutoff</th>
-                <th>Genuine M3 AUROC</th>
-                <th>Null AUROC (Mean &plusmn; Std)</th>
-                <th>Empirical p-value</th>
-                <th>Genuine Brier</th>
-                <th>Null Brier (Mean)</th>
-                <th>Statistical Verdict</th>
-              </tr>
-            </thead>
-            <tbody id="peer-controls-tbody">
-              <!-- Populated dynamically from /api/research/peer-controls -->
-            </tbody>
-          </table>
-        </div>
-
-        <h4 class="subhead">Selective Prediction: Risk-Coverage Trade-Off Curve</h4>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-          Held-out Primary Test performance when abstaining on low-reliability predictions. Thresholds chosen strictly on training CV out-of-fold predictions.
-        </p>
-        <div class="table-responsive">
-          <table class="research-table" id="selective-pred-table">
-            <thead>
-              <tr>
-                <th>Cutoff</th>
-                <th>Selection Mechanism</th>
-                <th>Target Coverage</th>
-                <th>Training Threshold (&tau;)</th>
-                <th>Realized Test Coverage</th>
-                <th>Retained AUROC</th>
-                <th>Retained Brier Score</th>
-                <th>Retained Accuracy</th>
-              </tr>
-            </thead>
-            <tbody id="selective-pred-tbody">
-              <!-- Populated dynamically from /api/research/selective-prediction -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Tab 2: Hypothesis Verdicts -->
-      <div class="research-panel" id="tab-hyp" style="display: none;">
-        <div class="hypothesis-grid" id="hypothesis-cards-grid">
-          <!-- Populated dynamically from /api/research/summary -->
-        </div>
-      </div>
-
-      <!-- Tab 3: Paired Model Differences -->
-      <div class="research-panel" id="tab-diff" style="display: none;">
-        <h4 class="subhead">Paired Battery-Level Bootstrap Differences (B = 1000 resamples)</h4>
-        <div class="table-responsive">
-          <table class="research-table" id="research-diff-table">
-            <thead>
-              <tr>
-                <th>Cutoff</th>
-                <th>Partition</th>
-                <th>Comparison Pair</th>
-                <th>ΔAUROC [95% Bootstrap CI]</th>
-                <th>ΔAUPRC [95% Bootstrap CI]</th>
-                <th>ΔBrier Score [95% Bootstrap CI]</th>
-                <th>Statistical Significance</th>
-              </tr>
-            </thead>
-            <tbody id="research-diff-tbody">
-              <!-- Populated dynamically from /api/research/differences -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Tab 4: Publication Visualizations -->
-      <div class="research-panel" id="tab-figs" style="display: none;">
-        <div class="figure-gallery-grid">
-          <div class="figure-card">
-            <img src="/results/figures/cutoff_comparison.png" alt="Cutoff Comparison Plot" loading="lazy">
-            <div class="figure-card-body">
-              <h4>Figure 1: Observation Cutoff Sensitivity (Cutoffs 40, 70, 100)</h4>
-              <p>Discrimination (AUROC, AUPRC) and probability calibration (Brier score) across cutoffs for M1, M2, M3, and M4.</p>
-            </div>
-          </div>
-          <div class="figure-card">
-            <img src="/results/figures/model_differences.png" alt="Model Differences Plot" loading="lazy">
-            <div class="figure-card-body">
-              <h4>Figure 2: Paired Model Differences with 95% Bootstrap CIs</h4>
-              <p>Forest plot of pairwise metric deltas on identical battery resamples across cutoffs.</p>
-            </div>
-          </div>
-          <div class="figure-card">
-            <img src="/results/figures/pmri_stratification.png" alt="PMRI Stratification Plot" loading="lazy">
-            <div class="figure-card-body">
-              <h4>Figure 3: Error Stratification by PMRI Reliability Tiers</h4>
-              <p>Brier score and MAE in High PMRI (≥ median) vs Moderate/Low PMRI (&lt; median) test batteries.</p>
-            </div>
-          </div>
-          <div class="figure-card">
-            <img src="/results/figures/calibration_diagrams.png" alt="Calibration Reliability Curves" loading="lazy">
-            <div class="figure-card-body">
-              <h4>Figure 4: Reliability Calibration Diagrams</h4>
-              <p>Empirical reliability curves comparing mean predicted failure probabilities against true positive fractions.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Section J: Factual Explainability Section -->
-    <section class="explain-section">
-      <div class="section-card">
-        <h2 class="card-title">Data-Grounded Trajectory Observations</h2>
-        <p class="card-subtitle">Factual summary of observed degradation phenomena up to the selected cutoff cycle.</p>
-
-        <div class="observations-box" id="observations-container">
-          <p class="text-muted">Select a battery above to review observed degradation trends.</p>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Footer -->
-  <footer class="app-footer">
-    <div class="footer-container">
-      <p><strong>B.Tech CSE Capstone Project:</strong> Confidence-Aware Peer-Relative Degradation Trajectory Analysis for Early End-of-Life Risk Prediction in Lithium-Ion Batteries.</p>
-      <p class="text-muted">Dataset: MATR / Severson et al. (Nature Energy 2019) • A123 Systems APR18650M1A Cells (1.1 Ah nominal) • 140 Cells • 18 Automated Tests Passing</p>
-    </div>
-  </footer>
-
+  <!-- Client Application Script -->
   <script src="app.js"></script>
 </body>
 </html>

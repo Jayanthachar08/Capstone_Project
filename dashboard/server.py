@@ -55,18 +55,12 @@ MODEL_METADATA = {
         "groups": ["Initial Condition", "Snapshot", "Trajectory", "Differential Curves", "Peer Trajectory", "Peer-Match Reliability PMRI (4)"],
         "desc": "Full proposed model incorporating peer-relative trajectory deviations and peer-match reliability metrics.",
     },
-    "M5": {
-        "name": "Adaptive Peer-Trust & Counterfactual Engine",
-        "feature_count": 46,
-        "groups": ["Initial Condition", "Snapshot", "Trajectory", "Differential Curves", "Peer Trajectory", "PMRI (4)", "Counterfactual Robustness (U)", "Adaptive Blending (T)"],
-        "desc": "Adaptive confidence-aware engine combining PMRI with counterfactual peer instability (U) to dynamically weight peer-relative and historical models.",
-    },
 }
 
 MODEL_THRESHOLDS = {
-    40: {"M1": 0.5691, "M2": 0.7284, "M3": 0.5486, "M4": 0.5267, "M5": 0.7477},
-    70: {"M1": 0.6656, "M2": 0.5957, "M3": 0.6423, "M4": 0.6066, "M5": 0.6359},
-    100: {"M1": 0.6079, "M2": 0.5305, "M3": 0.5950, "M4": 0.5790, "M5": 0.5681},
+    40: {"M1": 0.5691, "M2": 0.7284, "M3": 0.5486, "M4": 0.5267},
+    70: {"M1": 0.6656, "M2": 0.5957, "M3": 0.6423, "M4": 0.6066},
+    100: {"M1": 0.6079, "M2": 0.5305, "M3": 0.5950, "M4": 0.5790},
 }
 
 FEATURE_METADATA = {
@@ -277,6 +271,80 @@ FEATURE_METADATA = {
         "name": "Differential Curve Kurtosis",
         "unit": "Dim-less",
         "desc": "Peak sharpness / tail heaviness of ΔQ_{cutoff-10}(V) curve.",
+    },
+    # Group 5: Peer-Relative Trajectory Features (8)
+    "relative_capacity_deviation": {
+        "group": "Peer-Relative",
+        "name": "Relative Capacity Deviation (ΔQ)",
+        "unit": "Ah",
+        "desc": "Difference between target cell discharge capacity and median capacity of reference peers.",
+    },
+    "relative_slope_deviation": {
+        "group": "Peer-Relative",
+        "name": "Relative Degradation Slope Deviation (ΔSlope)",
+        "unit": "Ah/cycle",
+        "desc": "Difference between target cell degradation rate and median slope of reference peers.",
+    },
+    "relative_capacity_ratio": {
+        "group": "Peer-Relative",
+        "name": "Relative Capacity Ratio",
+        "unit": "Ratio",
+        "desc": "Ratio of target cell discharge capacity to median capacity of reference peers.",
+    },
+    "relative_fade_deviation": {
+        "group": "Peer-Relative",
+        "name": "Relative Net Fade Deviation",
+        "unit": "Ah",
+        "desc": "Difference between target net fade and median fade of reference peers.",
+    },
+    "relative_ir_deviation": {
+        "group": "Peer-Relative",
+        "name": "Relative Internal Resistance Deviation (ΔIR)",
+        "unit": "Ω",
+        "desc": "Difference between target internal resistance and median IR of reference peers.",
+    },
+    "peer_trajectory_dispersion": {
+        "group": "Peer-Relative",
+        "name": "Peer Trajectory Dispersion (IQR)",
+        "unit": "Ah",
+        "desc": "Dispersion / interquartile range of discharge capacity across reference peers.",
+    },
+    "peer_slope_dispersion": {
+        "group": "Peer-Relative",
+        "name": "Peer Degradation Slope Dispersion",
+        "unit": "Ah/cycle",
+        "desc": "Dispersion of capacity fade slope across reference peers.",
+    },
+    "relative_z_score_capacity": {
+        "group": "Peer-Relative",
+        "name": "Relative Capacity Z-Score",
+        "unit": "Z-score",
+        "desc": "Standardized difference of target capacity relative to the mean and standard deviation of peers.",
+    },
+    # Group 6: Peer Reliability PMRI Features (4)
+    "pmri": {
+        "group": "Peer Reliability (PMRI)",
+        "name": "Peer-Match Reliability Index (PMRI)",
+        "unit": "Index [0, 1]",
+        "desc": "Composite reliability score quantifying geometric similarity and trajectory agreement of peers.",
+    },
+    "peer_similarity_score": {
+        "group": "Peer Reliability (PMRI)",
+        "name": "Peer Distance Similarity Score",
+        "unit": "Score [0, 1]",
+        "desc": "Exponential decay score based on mean standardized Euclidean distance to peers.",
+    },
+    "peer_agreement_score": {
+        "group": "Peer Reliability (PMRI)",
+        "name": "Peer Trajectory Agreement Score",
+        "unit": "Score [0, 1]",
+        "desc": "Consistency score based on trajectory slope dispersion across reference peers.",
+    },
+    "mean_peer_distance": {
+        "group": "Peer Reliability (PMRI)",
+        "name": "Mean Reference Peer Distance",
+        "unit": "Std Dist",
+        "desc": "Mean standardized Euclidean distance to the k=5 reference peers in feature space.",
     },
 }
 
@@ -490,79 +558,57 @@ class BatteryDataManager:
                     self.research_robustness.append(typed)
             logger.info("Loaded %d Phase 6 robustness evaluations.", len(self.research_robustness))
 
-        # 8. Load M5 predictions, counterfactual robustness perturbations, and ablations
-        self.m5_predictions: Dict[str, Dict[int, Dict[str, Any]]] = {}
-        self.m5_perturbations: Dict[Tuple[str, int], List[Dict[str, Any]]] = {}
-        self.m5_ablations: List[Dict[str, Any]] = []
-        self.m5_summary: Dict[str, Any] = {}
+        # 8. Centralized Machine Learning Algorithm Selection & 36-Configuration Benchmarks
+        self.active_algorithm = "logistic_regression"
+        self.benchmark_predictions: Dict[str, Dict[str, Dict[int, Dict[str, Any]]]] = {
+            "logistic_regression": {},
+            "rbf_svm": {},
+            "tabpfn_2_5": {},
+        }
+        self.benchmark_summary: Dict[str, Any] = {}
+        self.algorithm_rankings: List[Dict[str, Any]] = []
+        self.distribution_shift: Dict[str, Any] = {}
 
-        m5_preds_csv = RESULTS_DIR / "m5_predictions.csv"
-        if m5_preds_csv.exists():
-            with open(m5_preds_csv, mode="r", encoding="utf-8") as f:
+        preds_36_csv = RESULTS_DIR / "benchmarks" / "benchmark_predictions_36.csv"
+        if not preds_36_csv.exists():
+            preds_36_csv = RESULTS_DIR / "multi_algorithm_predictions.csv"
+        if preds_36_csv.exists():
+            with open(preds_36_csv, mode="r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
+                    algo = row.get("algorithm", "logistic_regression")
                     cid = row["cell_id"]
                     cutoff = int(row["cutoff"])
-                    if cid not in self.m5_predictions:
-                        self.m5_predictions[cid] = {}
+                    if algo not in self.benchmark_predictions:
+                        self.benchmark_predictions[algo] = {}
+                    if cid not in self.benchmark_predictions[algo]:
+                        self.benchmark_predictions[algo][cid] = {}
                     typed = {}
                     for k, v in row.items():
                         try:
                             typed[k] = float(v) if v not in ("", "nan", "None", None) else None
                         except ValueError:
                             typed[k] = v
-                    self.m5_predictions[cid][cutoff] = typed
-                    if cid in self.model_predictions and cutoff in self.model_predictions[cid]:
-                        self.model_predictions[cid][cutoff]["prob_M5"] = typed.get("prob_M5")
-                        self.model_predictions[cid][cutoff]["instability_U"] = typed.get("instability_U")
-                        self.model_predictions[cid][cutoff]["trust_score_T"] = typed.get("trust_score_T")
-                        self.model_predictions[cid][cutoff]["abstained_M5"] = typed.get("abstained_M5")
-                        self.model_predictions[cid][cutoff]["abstention_reason_M5"] = typed.get("abstention_reason_M5")
-            logger.info("Loaded M5 predictions for %d cells across cutoffs.", len(self.m5_predictions))
+                    self.benchmark_predictions[algo][cid][cutoff] = typed
+            logger.info("Loaded benchmark predictions for %d algorithms.", len(self.benchmark_predictions))
 
-        m5_rob_csv = RESULTS_DIR / "m5_peer_robustness.csv"
-        if m5_rob_csv.exists():
-            with open(m5_rob_csv, mode="r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    cid = row["cell_id"]
-                    cutoff = int(row["cutoff"])
-                    key = (cid, cutoff)
-                    if key not in self.m5_perturbations:
-                        self.m5_perturbations[key] = []
-                    typed = {}
-                    for k, v in row.items():
-                        if k in ("prediction_flip", "is_valid"):
-                            typed[k] = str(v).lower() in ("true", "1")
-                        elif k in ("predicted_prob", "prob_delta"):
-                            try:
-                                typed[k] = float(v) if v not in ("", "nan", "None", None) else None
-                            except ValueError:
-                                typed[k] = v
-                        else:
-                            typed[k] = v
-                    self.m5_perturbations[key].append(typed)
-            logger.info("Loaded %d M5 counterfactual perturbation traces.", sum(len(v) for v in self.m5_perturbations.values()))
+        sum_json = RESULTS_DIR / "benchmarks" / "algorithm_comparison_summary.json"
+        if sum_json.exists():
+            with open(sum_json, mode="r", encoding="utf-8") as f:
+                self.benchmark_summary = json.load(f)
+            logger.info("Loaded 36-configuration benchmark comparison summary.")
 
-        m5_abl_csv = RESULTS_DIR / "m5_ablation_results.csv"
-        if m5_abl_csv.exists():
-            with open(m5_abl_csv, mode="r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    typed = {}
-                    for k, v in row.items():
-                        try:
-                            typed[k] = float(v) if v not in ("", "nan", "None", None) else None
-                        except ValueError:
-                            typed[k] = v
-                    self.m5_ablations.append(typed)
-            logger.info("Loaded %d M5 ablation records.", len(self.m5_ablations))
+        rank_json = RESULTS_DIR / "benchmarks" / "algorithm_ranking.json"
+        if rank_json.exists():
+            with open(rank_json, mode="r", encoding="utf-8") as f:
+                self.algorithm_rankings = json.load(f)
+            logger.info("Loaded multi-algorithm rankings.")
 
-        m5_eval_json = RESULTS_DIR / "m5_evaluation.json"
-        if m5_eval_json.exists():
-            with open(m5_eval_json, mode="r", encoding="utf-8") as f:
-                self.m5_summary = json.load(f)
-            logger.info("Loaded M5 evaluation JSON summary.")
+        shift_json = RESULTS_DIR / "benchmarks" / "distribution_shift_analysis.json"
+        if shift_json.exists():
+            with open(shift_json, mode="r", encoding="utf-8") as f:
+                self.distribution_shift = json.load(f)
+            logger.info("Loaded distribution shift analysis JSON.")
 
         # 9. Load multi-algorithm benchmark metrics
         multi_algo_csv = RESULTS_DIR / "multi_algorithm_metrics.csv"
@@ -634,7 +680,7 @@ class BatteryDataManager:
         # Calculate elevated risk counts per cutoff and model
         elevated_risk_counts: Dict[int, Dict[str, int]] = {40: {}, 70: {}, 100: {}}
         for cutoff in (40, 70, 100):
-            for model_key in ("M1", "M2", "M3", "M4", "M5"):
+            for model_key in ("M1", "M2", "M3", "M4"):
                 th = MODEL_THRESHOLDS[cutoff][model_key]
                 count = 0
                 for cell_dict in self.model_predictions.values():
@@ -657,11 +703,12 @@ class BatteryDataManager:
             "total_cycle_records": sum(len(c) for c in self.cycle_summaries.values()),
             "nominal_capacity_ah": 1.1,
             "eol_threshold_ah": 0.88,
-            "total_models": 5,
-            "total_baseline_models": 4,
-            "models": ["M1", "M2", "M3", "M4", "M5"],
+            "total_models": 4,
+            "models": ["M1", "M2", "M3", "M4"],
             "model_metadata": MODEL_METADATA,
             "model_thresholds": MODEL_THRESHOLDS,
+            "active_algorithm": self.active_algorithm,
+            "supported_algorithms": self.get_supported_algorithms(),
             "total_predictions": total_predictions,
             "prediction_target": "target_fail_within_500",
             "prediction_horizon_cycles": 500,
@@ -685,7 +732,12 @@ class BatteryDataManager:
             })
         return batteries
 
-    def get_battery_detail(self, cell_id: str, cutoff: Optional[int] = 100) -> Optional[Dict[str, Any]]:
+    def get_battery_detail(
+        self,
+        cell_id: str,
+        cutoff: Optional[int] = 100,
+        algorithm: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
         """Returns comprehensive data for a single battery: metadata,
 
         summary cards, cycle series up to cutoff, engineered features, and targets.
@@ -758,29 +810,42 @@ class BatteryDataManager:
             "Instantaneous Snapshot": [],
             "Emerging Trajectory": [],
             "Differential Curves": [],
+            "Peer-Relative": [],
+            "Peer Reliability (PMRI)": [],
         }
+        all_features = []
 
         cell_model_cutoffs = self.modeling_data.get(cell_id, {})
         target_info = {}
         target_cutoff = cutoff if (cutoff in (40, 70, 100)) else 100
+        peer_info = self.get_peer_info(cell_id, target_cutoff) or {}
 
         if target_cutoff in cell_model_cutoffs:
-            m_row = cell_model_cutoffs[target_cutoff]
+            m_row = dict(cell_model_cutoffs[target_cutoff])
+            # Merge peer_info so Groups 5 & 6 features are fully populated
+            m_row.update(peer_info)
+
             for col_name, meta_f in FEATURE_METADATA.items():
                 val = m_row.get(col_name)
-                features_grouped[meta_f["group"]].append({
+                f_item = {
                     "column": col_name,
                     "name": meta_f["name"],
+                    "group": meta_f["group"],
                     "value": val,
                     "unit": meta_f["unit"],
                     "description": meta_f["desc"],
-                })
+                }
+                if meta_f["group"] in features_grouped:
+                    features_grouped[meta_f["group"]].append(f_item)
+                all_features.append(f_item)
 
             target_info = {
                 "target_eol_cycle": m_row.get("target_eol_cycle"),
                 "target_rul": m_row.get("target_rul"),
+                "cycle_life": meta.get("benchmark_cycle_life"),
                 "target_fail_within_500": m_row.get("target_fail_within_500"),
                 "status_fail_within_500": m_row.get("status_fail_within_500"),
+                "is_failure_before_500": bool(m_row.get("target_fail_within_500") == 1.0 or (meta.get("benchmark_cycle_life") and meta.get("benchmark_cycle_life") <= 550)),
                 "target_fail_within_300": m_row.get("target_fail_within_300"),
                 "status_fail_within_300": m_row.get("status_fail_within_300"),
                 "target_fail_by_700": m_row.get("target_fail_by_700"),
@@ -814,8 +879,22 @@ class BatteryDataManager:
                 f"Thermal response: Peak surface temperature reached {tmax_latest:.1f} °C (average: {tavg_latest:.1f} °C) under the {meta['policy']} protocol."
             )
 
-        peer_info = self.get_peer_info(cell_id, target_cutoff)
-        model_preds = self.get_model_predictions_for_cell(cell_id, target_cutoff)
+        # Build observed landmark measurements for the tabular audit log
+        observed_landmarks = []
+        landmark_cycles = sorted(list(set([2, 10, 20, 30, 40, 50, 70, 100, max_observed_cycle])))
+        for c in active_cycles:
+            if c["cycle"] in landmark_cycles:
+                observed_landmarks.append({
+                    "cycle": c["cycle"],
+                    "q_discharge": c.get("QDischarge"),
+                    "q_charge": c.get("QCharge"),
+                    "ir": c.get("IR"),
+                    "tmax": c.get("Tmax"),
+                    "tavg": c.get("Tavg"),
+                    "chargetime": c.get("chargetime"),
+                })
+
+        model_preds = self.get_model_predictions_for_cell(cell_id, target_cutoff, algorithm=algorithm)
 
         return {
             "metadata": meta,
@@ -824,26 +903,36 @@ class BatteryDataManager:
                 "cell_id": cell_id,
                 "total_life_cycles": meta["benchmark_cycle_life"],
                 "observed_cycles_in_view": len(active_cycles),
+                "observed_cycles": len(active_cycles),
                 "total_cycles_recorded": len(all_cycles),
                 "q_start_ah": q_start,
+                "qdischarge_init_ah": q_start,
                 "q_latest_ah": q_latest,
+                "qdischarge_latest_ah": q_latest,
                 "q_change_ah": q_change,
+                "fade_delta_ah": q_change,
                 "q_change_pct": q_change_pct,
                 "retention_pct": retention_pct,
                 "ir_start_ohm": ir_start,
                 "ir_latest_ohm": ir_latest,
                 "ir_change_pct": ir_change_pct,
+                "ir_growth_pct": ir_change_pct,
                 "tmax_latest_c": tmax_latest,
+                "tmax_peak_c": tmax_latest,
                 "tavg_latest_c": tavg_latest,
                 "ct_latest_min": ct_latest,
+                "chargetime_latest_min": ct_latest,
                 "cycle_1_zero_note": "Cycle 1 is an unmonitored diagnostic cycle (Qd = 0.0 Ah). Physical baseline capacity begins at Cycle 2.",
             },
             "cycles": active_cycles,
+            "features": all_features,
             "features_grouped": features_grouped,
             "target_info": target_info,
+            "ground_truth_targets": target_info,
             "peer_info": peer_info,
             "model_predictions": model_preds,
             "factual_observations": observations,
+            "observed_landmarks": observed_landmarks,
         }
 
     def get_peer_info(self, cell_id: str, cutoff: int = 100) -> Optional[Dict[str, Any]]:
@@ -859,12 +948,24 @@ class BatteryDataManager:
         """Retrieves Phase 5 model evaluation metrics across cutoffs and models."""
         return self.model_metrics
 
-    def get_model_predictions_for_cell(self, cell_id: str, cutoff: int = 100) -> Optional[Dict[str, Any]]:
+    def get_model_predictions_for_cell(
+        self,
+        cell_id: str,
+        cutoff: int = 100,
+        algorithm: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
         """Retrieves model prediction probabilities for a cell at a specific cutoff,
-        enriched with threshold classifications, metadata, and validation status."""
-        if cell_id not in self.model_predictions:
-            return None
-        raw_pred = self.model_predictions[cell_id].get(cutoff)
+        enriched with threshold classifications, metadata, and validation status.
+        Applies the selected algorithm (Logistic Regression, RBF-SVM, or TabPFN 2.5) across M1-M4."""
+        algo = algorithm or self.active_algorithm
+        raw_pred = None
+
+        if algo in self.benchmark_predictions and cell_id in self.benchmark_predictions[algo]:
+            raw_pred = self.benchmark_predictions[algo][cell_id].get(cutoff)
+
+        if not raw_pred and cell_id in self.model_predictions:
+            raw_pred = self.model_predictions[cell_id].get(cutoff)
+
         if not raw_pred:
             return None
 
@@ -872,7 +973,7 @@ class BatteryDataManager:
         cutoff_th = MODEL_THRESHOLDS.get(cutoff, {})
 
         model_details = {}
-        for m in ("M1", "M2", "M3", "M4", "M5"):
+        for m in ("M1", "M2", "M3", "M4"):
             p_val = raw_pred.get(f"prob_{m}")
             th_val = cutoff_th.get(m, 0.50)
             is_elevated = (p_val >= th_val) if (p_val is not None) else None
@@ -885,13 +986,11 @@ class BatteryDataManager:
                 "feature_count": MODEL_METADATA[m]["feature_count"],
                 "groups": MODEL_METADATA[m]["groups"],
                 "description": MODEL_METADATA[m]["desc"],
-                "abstained": raw_pred.get("abstained_M5") if m == "M5" else False,
-                "abstention_reason": raw_pred.get("abstention_reason_M5") if m == "M5" else None,
-                "trust_score": raw_pred.get("trust_score_T") if m == "M5" else None,
-                "instability_U": raw_pred.get("instability_U") if m == "M5" else None,
+                "algorithm": algo,
             }
 
         enriched["model_details"] = model_details
+        enriched["active_algorithm"] = algo
         enriched["target_name"] = "target_fail_within_500"
         enriched["target_horizon_cycles"] = 500
         enriched["validation_status"] = (
@@ -928,18 +1027,39 @@ class BatteryDataManager:
         target_cycles = self.cycle_summaries.get(cell_id, [])
         target_pts = [{"x": c["cycle"], "y": c["QDischarge"]} for c in target_cycles if 2 <= c["cycle"] <= cutoff]
 
+        # Normalized peer similarity weights
+        inv_dists = [1.0 / (d + 0.001) for d in peer_dists]
+        sum_inv = sum(inv_dists) if sum(inv_dists) > 0 else 1.0
+        norm_weights = [round(w / sum_inv, 4) for w in inv_dists]
+
+        target_latest_q = target_pts[-1]["y"] if target_pts else None
+
         # Peer trajectories
         peer_series = []
         peer_cycles_map: Dict[int, List[float]] = {}
         for idx, pid in enumerate(peer_ids):
             p_dist = peer_dists[idx] if idx < len(peer_dists) else 0.0
+            p_weight = norm_weights[idx] if idx < len(norm_weights) else (round(1.0 / len(peer_ids), 4) if peer_ids else 0.20)
             p_cycles = self.cycle_summaries.get(pid, [])
             p_pts = [{"x": c["cycle"], "y": c["QDischarge"]} for c in p_cycles if 2 <= c["cycle"] <= cutoff]
-            peer_series.append({
+            p_meta = self.cells_meta.get(pid, {})
+
+            p_latest_q = p_pts[-1]["y"] if p_pts else None
+            rel_q_drop = round(((target_latest_q - p_latest_q) / p_latest_q) * 100.0, 2) if (target_latest_q and p_latest_q and p_latest_q > 0) else None
+
+            p_dict = {
                 "cell_id": pid,
+                "peer_id": pid,
                 "distance": p_dist,
+                "weight": p_weight,
+                "batch": p_meta.get("batch"),
+                "policy": p_meta.get("policy"),
+                "actual_life": p_meta.get("benchmark_cycle_life"),
+                "relative_q_drop_pct": rel_q_drop,
+                "relative_slope_pct": round(peer_row.get("relative_slope_deviation", 0) * 1000, 2) if peer_row.get("relative_slope_deviation") is not None else None,
                 "points": p_pts,
-            })
+            }
+            peer_series.append(p_dict)
             for pt in p_pts:
                 cyc = pt["x"]
                 qd = pt["y"]
@@ -972,8 +1092,11 @@ class BatteryDataManager:
             "peer_feature_completeness": peer_row.get("peer_feature_completeness"),
             "reliability_warning": peer_row.get("reliability_warning", "NONE"),
             "target_trajectory": target_pts,
+            "target_series": target_pts,
             "peers": peer_series,
+            "peer_series": peer_series,
             "mean_peer_trajectory": mean_peer_pts,
+            "centroid_series": mean_peer_pts,
             "deviation_trajectory": deviation_pts,
             "relative_capacity_deviation": peer_row.get("relative_capacity_deviation"),
             "relative_slope_deviation": peer_row.get("relative_slope_deviation"),
@@ -1026,86 +1149,59 @@ class BatteryDataManager:
             ),
         }
 
-    def get_m5_robustness_for_cell(self, cell_id: str, cutoff: int = 100) -> Optional[Dict[str, Any]]:
-        """Retrieves counterfactual perturbation traces and sensitivity metrics for a battery cell."""
-        if cell_id not in self.m5_predictions:
-            return None
-        m5_row = self.m5_predictions[cell_id].get(cutoff)
-        if not m5_row:
-            return None
+    def get_active_algorithm(self) -> str:
+        """Returns the currently active global machine learning algorithm."""
+        return self.active_algorithm
 
-        key = (cell_id, cutoff)
-        perturbations = self.m5_perturbations.get(key, [])
-
-        u_val = m5_row.get("instability_U", 0.0)
-        t_val = m5_row.get("trust_score_T", 0.0)
-        p_peer = m5_row.get("prob_M3")
-        p_hist = m5_row.get("prob_M2")
-        p_m5 = m5_row.get("prob_M5")
-        flip_rate = m5_row.get("flip_rate", 0.0)
-        abstained = bool(m5_row.get("abstained_M5", False))
-        reason = m5_row.get("abstention_reason_M5", "NOMINAL_TRUST")
-
-        if abstained:
-            explanation = (
-                f"Abstention triggered: {reason}. Automated risk prediction is flagged as low confidence "
-                f"due to reference cohort sparsity or elevated counterfactual perturbation variance."
-            )
-        elif u_val is not None and u_val > 0.05:
-            explanation = (
-                f"The peer-based estimate changes under alternative reference selections (U = {u_val:.4f}, flip rate = {flip_rate*100:.1f}%). "
-                f"The system has automatically adapted its peer-trust score (T = {t_val:.3f}) and blended with historical degradation evidence."
-            )
+    def set_active_algorithm(self, algorithm: str) -> str:
+        """Sets the global active machine learning algorithm across M1-M4."""
+        k = algorithm.lower().strip().replace("-", "_").replace(" ", "_").replace(".", "_")
+        if k in ("logistic_regression", "lr", "logistic"):
+            self.active_algorithm = "logistic_regression"
+        elif k in ("rbf_svm", "svm", "svc", "rbf"):
+            self.active_algorithm = "rbf_svm"
+        elif k in ("tabpfn_2_5", "tabpfn_2", "tabpfn", "tab_pfn"):
+            self.active_algorithm = "tabpfn_2_5"
         else:
-            explanation = (
-                f"The peer-based estimate remains stable across counterfactual reference perturbations (U = {u_val:.4f}). "
-                f"High adaptive trust (T = {t_val:.3f}) was placed on the peer-relative degradation trajectory."
-            )
+            raise ValueError(f"Unsupported algorithm '{algorithm}'. Permitted: ['logistic_regression', 'rbf_svm', 'tabpfn_2_5']")
+        logger.info("Server active algorithm set to: %s", self.active_algorithm)
+        return self.active_algorithm
 
-        # Build sensitivity ranking from LOO perturbations
-        sensitivity_ranking = []
-        for p in perturbations:
-            if p.get("perturbation_type") == "LEAVE_ONE_OUT":
-                peer = p.get("excluded_peer")
-                delta = float(p.get("prob_delta", 0.0))
-                sensitivity_ranking.append({
-                    "peer_id": peer,
-                    "prob_delta": delta,
-                    "abs_delta": abs(delta),
-                    "predicted_prob": float(p.get("predicted_prob", 0.0)),
-                })
-        sensitivity_ranking.sort(key=lambda x: x["abs_delta"], reverse=True)
+    def get_supported_algorithms(self) -> List[Dict[str, Any]]:
+        """Returns metadata for all three supported benchmark algorithms."""
+        return [
+            {
+                "id": "logistic_regression",
+                "name": "Standardized Logistic Regression",
+                "family": "Linear",
+                "description": "Baseline linear classifier with StandardScaler, L2 regularization, and Platt probability calibration.",
+                "is_active": (self.active_algorithm == "logistic_regression"),
+            },
+            {
+                "id": "rbf_svm",
+                "name": "RBF Support Vector Machine",
+                "family": "Kernel Method",
+                "description": "Nonlinear radial basis function kernel SVM with StandardScaler and Platt probability scaling.",
+                "is_active": (self.active_algorithm == "rbf_svm"),
+            },
+            {
+                "id": "tabpfn_2_5",
+                "name": "TabPFN 2.5",
+                "family": "Foundation Model / PFN",
+                "description": "Prior-Data Fitted Network transformer foundation model for tabular classification with synthetic default-2 checkpoint.",
+                "is_active": (self.active_algorithm == "tabpfn_2_5"),
+            },
+        ]
 
+    def get_algorithm_benchmarks(self) -> Dict[str, Any]:
+        """Returns 36-configuration comparative benchmark metrics, rankings, and distribution shift analysis."""
         return {
-            "cell_id": cell_id,
-            "cutoff": cutoff,
-            "prob_peer": p_peer,
-            "prob_history": p_hist,
-            "prob_m5": p_m5,
-            "threshold": m5_row.get("threshold_M5", MODEL_THRESHOLDS[cutoff]["M5"]),
-            "is_elevated_risk": m5_row.get("is_elevated_risk_M5"),
-            "risk_category": m5_row.get("risk_category_M5"),
-            "pmri": m5_row.get("pmri"),
-            "instability_u": u_val,
-            "instability_U": u_val,
-            "counterfactual_mean": m5_row.get("counterfactual_mean"),
-            "counterfactual_range": m5_row.get("counterfactual_range"),
-            "flip_rate": flip_rate,
-            "most_influential_peer": m5_row.get("most_influential_peer"),
-            "max_peer_delta": m5_row.get("max_peer_delta"),
-            "trust_score": t_val,
-            "lambda_param": m5_row.get("lambda_param"),
-            "instability_penalty": m5_row.get("instability_penalty"),
-            "abstained": abstained,
-            "abstention_reason": reason,
-            "explanation": explanation,
-            "perturbations": perturbations,
-            "sensitivity_ranking": sensitivity_ranking,
+            "summary": self.benchmark_summary,
+            "rankings": self.algorithm_rankings,
+            "distribution_shift": self.distribution_shift,
+            "active_algorithm": self.active_algorithm,
+            "algorithms": self.get_supported_algorithms(),
         }
-
-    def get_m5_ablations(self) -> List[Dict[str, Any]]:
-        """Retrieves Phase 7 M5 ablation results."""
-        return self.m5_ablations
 
     def validate_hardware_csv(self, csv_content: str) -> Dict[str, Any]:
         """Validates uploaded external laboratory test stream CSV against documented hardware schema.
@@ -1251,21 +1347,20 @@ class BatteryDataManager:
     def get_benchmark_export(self, format_type: str = "json") -> Tuple[str, str]:
         """Exports benchmark metrics and predictions as JSON or CSV."""
         if format_type.lower() == "csv":
-            m5_csv_path = RESULTS_DIR / "m5_predictions.csv"
-            if m5_csv_path.exists():
-                return m5_csv_path.read_text(encoding="utf-8"), "text/csv"
-            return "cell_id,cutoff,prob_M5\n", "text/csv"
+            bench_csv = RESULTS_DIR / "benchmarks" / "benchmark_predictions_36.csv"
+            if not bench_csv.exists():
+                bench_csv = RESULTS_DIR / "multi_algorithm_predictions.csv"
+            if bench_csv.exists():
+                return bench_csv.read_text(encoding="utf-8"), "text/csv"
+            return "cell_id,cutoff,algorithm,prob_M1,prob_M2,prob_M3,prob_M4\n", "text/csv"
         else:
-            predictions_list = []
-            m5_csv_path = RESULTS_DIR / "m5_predictions.csv"
-            if m5_csv_path.exists():
-                with open(m5_csv_path, "r", encoding="utf-8") as f:
-                    predictions_list = list(csv.DictReader(f))
             data = {
-                "m5_summary": self.m5_summary,
+                "active_algorithm": self.active_algorithm,
+                "supported_algorithms": self.get_supported_algorithms(),
+                "rankings": self.algorithm_rankings,
+                "distribution_shift": self.distribution_shift,
+                "benchmarks": self.benchmark_summary,
                 "overview": self.get_overview(),
-                "ablations": self.m5_ablations,
-                "predictions": predictions_list,
             }
             return json.dumps(data, indent=2), "application/json"
 
@@ -1342,8 +1437,9 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                 cell_id = path.replace("/api/battery/", "").strip("/")
                 cutoff_str = query.get("cutoff", ["100"])[0]
                 cutoff = None if cutoff_str.lower() == "all" else int(cutoff_str)
+                algo = query.get("algorithm", [None])[0]
 
-                data = DATA_MANAGER.get_battery_detail(cell_id, cutoff)
+                data = DATA_MANAGER.get_battery_detail(cell_id, cutoff, algorithm=algo)
                 if data is None:
                     self.send_error_response(404, f"Battery '{cell_id}' not found.")
                 else:
@@ -1381,6 +1477,15 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                 else:
                     self.send_json_response(data)
 
+            elif path == "/api/algorithm-selector":
+                self.send_json_response({
+                    "active_algorithm": DATA_MANAGER.get_active_algorithm(),
+                    "supported_algorithms": DATA_MANAGER.get_supported_algorithms(),
+                })
+
+            elif path == "/api/algorithm-benchmarks":
+                self.send_json_response(DATA_MANAGER.get_algorithm_benchmarks())
+
             elif path == "/api/models/metrics":
                 data = DATA_MANAGER.get_model_metrics()
                 self.send_json_response(data)
@@ -1389,8 +1494,9 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                 cid = query.get("id", [""])[0]
                 cutoff_str = query.get("cutoff", ["100"])[0]
                 cutoff = int(cutoff_str) if cutoff_str.isdigit() else 100
+                algo = query.get("algorithm", [None])[0]
 
-                data = DATA_MANAGER.get_model_predictions_for_cell(cid, cutoff)
+                data = DATA_MANAGER.get_model_predictions_for_cell(cid, cutoff, algorithm=algo)
                 if data is None:
                     self.send_error_response(404, f"Model predictions for '{cid}' at cutoff {cutoff} not found.")
                 else:
@@ -1399,8 +1505,9 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
             elif path == "/api/models/predict":
                 cid = query.get("id", [""])[0]
                 cutoff_str = query.get("cutoff", ["100"])[0]
-                model_name = query.get("model", ["M5"])[0].upper()
+                model_name = query.get("model", ["M4"])[0].upper()
                 cutoff = int(cutoff_str) if cutoff_str.isdigit() else 100
+                algo = query.get("algorithm", [None])[0]
 
                 if cid not in DATA_MANAGER.cells_meta:
                     self.send_error_response(404, f"Battery '{cid}' not found.")
@@ -1408,11 +1515,11 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                 if cutoff not in (40, 70, 100):
                     self.send_error_response(400, f"Unsupported observation cutoff: {cutoff}. Allowed: 40, 70, 100.")
                     return
-                if model_name not in ("M1", "M2", "M3", "M4", "M5"):
-                    self.send_error_response(400, f"Unsupported model '{model_name}'. Allowed: M1, M2, M3, M4, M5.")
+                if model_name not in ("M1", "M2", "M3", "M4"):
+                    self.send_error_response(400, f"Unsupported model '{model_name}'. Allowed: M1, M2, M3, M4.")
                     return
 
-                cell_preds = DATA_MANAGER.get_model_predictions_for_cell(cid, cutoff)
+                cell_preds = DATA_MANAGER.get_model_predictions_for_cell(cid, cutoff, algorithm=algo)
                 if cell_preds is None:
                     self.send_error_response(404, f"No predictions available for '{cid}' at cutoff {cutoff} (Cell may be excluded from benchmark).")
                     return
@@ -1421,6 +1528,7 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                 res = {
                     "cell_id": cid,
                     "cutoff": cutoff,
+                    "algorithm": cell_preds.get("active_algorithm"),
                     "model": model_name,
                     "model_name": details["name"],
                     "probability": details["probability"],
@@ -1436,28 +1544,7 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
                     "validation_status": cell_preds.get("validation_status"),
                     "source": "SAVED_VALIDATED_PREDICTION",
                 }
-                if model_name == "M5":
-                    res["trust_score"] = details.get("trust_score")
-                    res["instability_U"] = details.get("instability_U")
-                    res["abstained"] = details.get("abstained")
-                    res["abstention_reason"] = details.get("abstention_reason")
                 self.send_json_response(res)
-
-            elif path == "/api/m5/robustness":
-                cid = query.get("id", [""])[0]
-                cutoff_str = query.get("cutoff", ["100"])[0]
-                cutoff = int(cutoff_str) if cutoff_str.isdigit() else 100
-                data = DATA_MANAGER.get_m5_robustness_for_cell(cid, cutoff)
-                if data is None:
-                    self.send_error_response(404, f"M5 robustness data for '{cid}' at cutoff {cutoff} not found.")
-                else:
-                    self.send_json_response(data)
-
-            elif path == "/api/m5/ablations":
-                self.send_json_response(DATA_MANAGER.get_m5_ablations())
-
-            elif path == "/api/m5/summary":
-                self.send_json_response(DATA_MANAGER.m5_summary)
 
             elif path == "/api/export/benchmark":
                 fmt = query.get("format", ["json"])[0]
@@ -1496,11 +1583,28 @@ class DashboardRequestHandler(SimpleHTTPRequestHandler):
             self.send_error_response(500, f"Internal server error: {err}")
 
     def do_POST(self):
-        """Routes POST requests for hardware CSV validation."""
+        """Routes POST requests for hardware CSV validation and algorithm selection."""
         parsed_url = urlparse(self.path)
         path = parsed_url.path
 
-        if path == "/api/hardware/validate":
+        if path == "/api/algorithm-selector":
+            try:
+                content_length = int(self.headers.get("Content-Length", 0))
+                post_body = self.rfile.read(content_length).decode("utf-8")
+                payload = json.loads(post_body) if post_body.strip() else {}
+                algo = payload.get("algorithm", "")
+                new_algo = DATA_MANAGER.set_active_algorithm(algo)
+                self.send_json_response({
+                    "success": True,
+                    "active_algorithm": new_algo,
+                    "message": f"Global active algorithm updated to '{new_algo}'.",
+                    "supported_algorithms": DATA_MANAGER.get_supported_algorithms(),
+                })
+            except Exception as err:
+                logger.exception("Error in algorithm selector POST handler: %s", err)
+                self.send_error_response(400, f"Algorithm selection error: {err}")
+
+        elif path == "/api/hardware/validate":
             try:
                 content_length = int(self.headers.get("Content-Length", 0))
                 post_body = self.rfile.read(content_length).decode("utf-8")

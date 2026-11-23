@@ -65,9 +65,8 @@ class MultiAlgorithmBenchmark:
         self.random_state = random_state
         self.algorithms = algorithms or [
             "logistic_regression",
-            "random_forest",
             "rbf_svm",
-            "hist_gradient_boosting",
+            "tabpfn_2_5",
         ]
 
     def load_and_merge_data(self) -> pd.DataFrame:

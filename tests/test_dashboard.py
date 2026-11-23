@@ -31,19 +31,38 @@ class TestDashboardDataManager(unittest.TestCase):
         self.assertTrue(meta["is_benchmark_eligible"])
         self.assertEqual(meta["benchmark_cycle_life"], 1852.0)
 
-        # Check summary cards
+        # Check summary cards & HeroUI aliases
         cards = detail["summary_cards"]
         self.assertEqual(cards["observed_cycles_in_view"], 100)
         self.assertEqual(cards["total_cycles_recorded"], 1851)
         self.assertGreater(cards["q_start_ah"], 1.0)
         self.assertGreater(cards["q_latest_ah"], 1.0)
+        self.assertEqual(cards["qdischarge_init_ah"], cards["q_start_ah"])
+        self.assertEqual(cards["qdischarge_latest_ah"], cards["q_latest_ah"])
+        self.assertEqual(cards["fade_delta_ah"], cards["q_change_ah"])
+        self.assertEqual(cards["ir_growth_pct"], cards["ir_change_pct"])
+        self.assertEqual(cards["tmax_peak_c"], cards["tmax_latest_c"])
 
-        # Check feature groups
+        # Check observed landmarks table
+        self.assertIn("observed_landmarks", detail)
+        self.assertGreaterEqual(len(detail["observed_landmarks"]), 5)
+        for lm in detail["observed_landmarks"]:
+            self.assertIn("cycle", lm)
+            self.assertIn("q_discharge", lm)
+
+        # Check ground truth targets
+        self.assertIn("ground_truth_targets", detail)
+        self.assertEqual(detail["ground_truth_targets"]["target_eol_cycle"], 1852.0)
+
+        # Check all 46 features (flat and grouped across 6 groups)
+        self.assertEqual(len(detail["features"]), 46)
         feats = detail["features_grouped"]
         self.assertEqual(len(feats["Initial Condition"]), 11)
         self.assertEqual(len(feats["Instantaneous Snapshot"]), 7)
         self.assertEqual(len(feats["Emerging Trajectory"]), 11)
         self.assertEqual(len(feats["Differential Curves"]), 5)
+        self.assertEqual(len(feats["Peer-Relative"]), 8)
+        self.assertEqual(len(feats["Peer Reliability (PMRI)"]), 4)
 
     def test_comparison_series_output(self):
         """Verify multi-cell comparison query structure."""
@@ -70,22 +89,24 @@ class TestDashboardDataManager(unittest.TestCase):
         self.assertTrue(any(m["model"] == "M4" for m in metrics))
 
     def test_overview_model_statistics(self):
-        """Verify overview statistics include model counts and elevated risk tallies for M1-M5."""
+        """Verify overview statistics include model counts and elevated risk tallies for M1-M4."""
         ov = DATA_MANAGER.get_overview()
-        self.assertEqual(ov["total_models"], 5)
+        self.assertEqual(ov["total_models"], 4)
+        self.assertEqual(ov["models"], ["M1", "M2", "M3", "M4"])
         self.assertEqual(ov["total_predictions"], 372)
+        self.assertIn("active_algorithm", ov)
+        self.assertIn("supported_algorithms", ov)
         self.assertIn("elevated_risk_counts", ov)
         self.assertEqual(set(ov["elevated_risk_counts"].keys()), {40, 70, 100})
         self.assertIn("M4", ov["elevated_risk_counts"][100])
-        self.assertIn("M5", ov["elevated_risk_counts"][100])
-        self.assertGreater(ov["elevated_risk_counts"][100]["M5"], 0)
+        self.assertGreater(ov["elevated_risk_counts"][100]["M4"], 0)
 
     def test_enriched_model_predictions(self):
         """Verify model predictions contain thresholds, classifications, and finite probabilities."""
         pred = DATA_MANAGER.get_model_predictions_for_cell("b1c0", cutoff=100)
         self.assertIsNotNone(pred)
         self.assertIn("model_details", pred)
-        for m in ["M1", "M2", "M3", "M4", "M5"]:
+        for m in ["M1", "M2", "M3", "M4"]:
             det = pred["model_details"][m]
             self.assertIn("probability", det)
             self.assertIn("threshold", det)
@@ -105,6 +126,24 @@ class TestDashboardDataManager(unittest.TestCase):
         self.assertGreater(len(traj["deviation_trajectory"]), 0)
         self.assertEqual(traj["reliability_warning"], "NONE")
 
+        # Verify dual aliases for frontend compatibility
+        self.assertIn("target_series", traj)
+        self.assertIn("peer_series", traj)
+        self.assertIn("centroid_series", traj)
+
+        # Verify peer structure and normalized weights
+        weights_sum = 0.0
+        for peer in traj["peers"]:
+            self.assertIn("peer_id", peer)
+            self.assertIn("cell_id", peer)
+            self.assertIn("distance", peer)
+            self.assertIn("weight", peer)
+            self.assertIn("points", peer)
+            self.assertGreater(len(peer["points"]), 0)
+            self.assertGreater(peer["weight"], 0.0)
+            weights_sum += peer["weight"]
+        self.assertAlmostEqual(weights_sum, 1.0, places=3)
+
     def test_research_artifacts_loaded(self):
         """Verify Phase 6 hypothesis evaluations and paired differences are indexed."""
         self.assertGreater(len(DATA_MANAGER.research_summary), 0)
@@ -113,34 +152,51 @@ class TestDashboardDataManager(unittest.TestCase):
         self.assertEqual(len(DATA_MANAGER.research_differences), 24)
         self.assertEqual(len(DATA_MANAGER.research_robustness), 48)
 
-    def test_m5_robustness_endpoint(self):
-        """Verify M5 counterfactual perturbation traces and sensitivity ranking."""
-        data = DATA_MANAGER.get_m5_robustness_for_cell("b1c0", cutoff=100)
-        self.assertIsNotNone(data)
-        self.assertEqual(data["cell_id"], "b1c0")
-        self.assertEqual(data["cutoff"], 100)
-        self.assertIn("perturbations", data)
-        self.assertGreater(len(data["perturbations"]), 5)
-        self.assertIn("sensitivity_ranking", data)
-        self.assertIn("trust_score", data)
-        self.assertIn("instability_U", data)
+    def test_algorithm_selector_api(self):
+        """Verify algorithm selector queries and dynamic switching across M1-M4."""
+        initial = DATA_MANAGER.get_active_algorithm()
+        self.assertIn(initial, ["logistic_regression", "rbf_svm", "tabpfn_2_5"])
 
-    def test_m5_ablations_endpoint(self):
-        """Verify M5 ablation records are indexed."""
-        ablations = DATA_MANAGER.get_m5_ablations()
-        self.assertEqual(len(ablations), 12)
-        modes = {a["ablation_mode"] for a in ablations}
-        self.assertEqual(modes, {"full", "no_pmri", "no_instability", "fixed_blend"})
+        # Switch to rbf_svm
+        switched = DATA_MANAGER.set_active_algorithm("rbf_svm")
+        self.assertEqual(switched, "rbf_svm")
+        self.assertEqual(DATA_MANAGER.get_active_algorithm(), "rbf_svm")
+
+        pred_rbf = DATA_MANAGER.get_model_predictions_for_cell("b1c0", cutoff=100)
+        self.assertEqual(pred_rbf["active_algorithm"], "rbf_svm")
+
+        # Switch to tabpfn_2_5
+        switched2 = DATA_MANAGER.set_active_algorithm("tabpfn_2_5")
+        self.assertEqual(switched2, "tabpfn_2_5")
+        pred_tab = DATA_MANAGER.get_model_predictions_for_cell("b1c0", cutoff=100)
+        self.assertEqual(pred_tab["active_algorithm"], "tabpfn_2_5")
+
+        # Reset to logistic_regression
+        DATA_MANAGER.set_active_algorithm("logistic_regression")
+        self.assertEqual(DATA_MANAGER.get_active_algorithm(), "logistic_regression")
+
+    def test_algorithm_benchmarks_api(self):
+        """Verify 36-configuration benchmarks and ranking data retrieval."""
+        bench = DATA_MANAGER.get_algorithm_benchmarks()
+        self.assertIn("summary", bench)
+        self.assertIn("rankings", bench)
+        self.assertIn("distribution_shift", bench)
+        self.assertEqual(len(bench["rankings"]), 3)
+        algo_names = {r["algorithm"] for r in bench["rankings"]}
+        self.assertEqual(algo_names, {"logistic_regression", "rbf_svm", "tabpfn_2_5"})
 
     def test_benchmark_export(self):
         """Verify benchmark data exports in CSV and JSON formats."""
         csv_content, csv_mime = DATA_MANAGER.get_benchmark_export("csv")
         self.assertIn("cell_id", csv_content)
-        self.assertIn("prob_M5", csv_content)
+        self.assertIn("algorithm", csv_content)
+        self.assertIn("prob_M1", csv_content)
+        self.assertIn("prob_M4", csv_content)
         self.assertEqual(csv_mime, "text/csv")
 
         json_content, json_mime = DATA_MANAGER.get_benchmark_export("json")
-        self.assertIn("predictions", json_content)
+        self.assertIn("active_algorithm", json_content)
+        self.assertIn("benchmarks", json_content)
         self.assertEqual(json_mime, "application/json")
 
     def test_hardware_csv_validation(self):
@@ -165,7 +221,7 @@ class TestDashboardDataManager(unittest.TestCase):
         algos = DATA_MANAGER.get_multi_algorithm_metrics()
         self.assertGreater(len(algos), 0)
         found_algos = {a["algorithm"] for a in algos}
-        self.assertTrue({"logistic_regression", "random_forest", "rbf_svm", "hist_gradient_boosting"}.issubset(found_algos))
+        self.assertTrue({"logistic_regression", "rbf_svm", "tabpfn_2_5"}.issubset(found_algos))
 
     def test_peer_control_results_api(self):
         """Verify multi-seed peer control permutations and PMRI validation analysis."""
@@ -181,7 +237,6 @@ class TestDashboardDataManager(unittest.TestCase):
         self.assertGreater(len(curve), 0)
         mechanisms = {pt["selection_mechanism"] for pt in curve}
         self.assertIn("pmri_threshold", mechanisms)
-        self.assertIn("m5_trust_threshold", mechanisms)
 
 
 if __name__ == "__main__":

@@ -69,6 +69,8 @@ scratch/
 tmp/
 temp/
 *.log
+dashboard/backup_pre_heroui/
+*.bak
 
 # Third-party copyrighted research publications (IEEE, Elsevier, Springer PDFs)
 Researchpapers/
